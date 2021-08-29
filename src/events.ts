@@ -1,3 +1,4 @@
+// Borrowed from https://github.com/project-serum/anchor/blob/master/ts/src/program/event.ts
 import { PublicKey, Connection } from '@solana/web3.js';
 import * as assert from 'assert';
 
