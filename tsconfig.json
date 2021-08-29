@@ -1,0 +1,29 @@
+{
+  "ts-node": {
+    "files": true
+  },
+  "include": ["src/**/*", "examples/**/**/*"],
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "target": "es2019",
+
+    "outDir": "dist/esm/",
+    "rootDir": "./",
+    "declarationDir": "dist",
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noImplicitAny": false,
+
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "composite": true,
+    "baseUrl": ".",
+    "typeRoots": ["types/", "node_modules/@types"]
+  }
+}
