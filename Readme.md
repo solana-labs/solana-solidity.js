@@ -43,7 +43,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
     [],
     8192 * 8
   );
-  console.log(await token.call('symbol', []));
+  console.log(await token.functions.symbol());
 
   // load existing contract
   const token2 = await Contract.get(
