@@ -1,29 +1,32 @@
-## Solana Solidity JavaScript Client (Work In Progress)
+# ERC20
 
-JavaScript Client to use to deploy and interact with Solang-compiled Solidity contracts. The [Solang Compiler](https://github.com/hyperledger-labs/solang) can compile Solidity contracts to native Solana BPF contracts. Attempts to emulate [ethers.js](https://github.com/ethers-io/ethers.js) and [anchor.js](https://github.com/project-serum/anchor/tree/master/ts)
+This example assumes all [prerequisites](../getting-started/installation.md) are installed.
 
-### Documentation
+1. Clone the Repo.
 
-View docs [here](https://vbstreetz.github.io/solana-solidity.js/examples/erc20.html).
-
-### Getting started
-
-1. Install the [Solang Compiler](https://solang.readthedocs.io/en/latest/).
-2. Install the library:
-
-```
-npm install solana-solidity
+```bash
+git clone https://github.com/solana-labs/solana-solidity.js
 ```
 
-3. Compile the Solidity contract:
+2. Compile the example contracts.
 
+```bash
+npm run build-examples
 ```
-solang MyContract.sol --target solana -v
+
+3. Change directories to the [example](https://github.com/solana-labs/solana-solidity.js/tree/master/examples/erc20).
+
+```bash
+cd solana-solidity.js/examples/erc20
 ```
 
-This outputs `*.abi` and `bundle.so` files.
+4. Start the [Solana test validator](https://docs.solana.com/developing/test-validator).
 
-4. Deploy and interact with the contract on Solana!
+```bash
+solana-test-validator
+```
+
+5. Deploy and interact with the contract on Solana!
 
 ```typescript
 import { Contract, Program, newAccountWithLamports } from 'solana-solidity';
@@ -68,7 +71,3 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   });
 })();
 ```
-
-## Licence
-
-Apache License 2.0

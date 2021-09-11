@@ -6,7 +6,7 @@
   "types": "dist/src/index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register examples/**/tests/*.spec.ts",
-    "build": "solang examples/**/contracts/*.sol -o examples/**/build --target solana -v",
+    "build-examples": "solang examples/**/contracts/*.sol -o examples/**/build --target solana -v",
     "prepublish": "tsc --resolveJsonModule"
   },
   "license": "MIT",
