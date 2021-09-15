@@ -56,8 +56,8 @@ export async function newAccountWithLamports(
   throw new Error(`airdrop of ${lamports} failed`);
 }
 
-export function getConnection(): Connection {
-  let url = process.env.RPC_URL || DEFAULT_URL;
+export function getConnection(rpcUrl?: string): Connection {
+  let url = rpcUrl || process.env.RPC_URL || DEFAULT_URL;
   return new Connection(url, 'recent');
 }
 
