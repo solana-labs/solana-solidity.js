@@ -37,7 +37,7 @@ describe('ERC20', () => {
 
   beforeEach(async function () {});
 
-  it('deploy new contract', async function () {
+  it('deploys new contracts', async function () {
     token = await Contract.deploy(
       program,
       'ERC20',
@@ -63,7 +63,7 @@ describe('ERC20', () => {
     expect(res[0]).toEqual(TOTAL_SUPPLY);
   });
 
-  it('load existing contract', async function () {
+  it('loads existing contracts', async function () {
     token = await Contract.get(
       program,
       CONTRACT_ABI,
@@ -74,7 +74,7 @@ describe('ERC20', () => {
     expect(res[0].toString()).toEqual('Solana');
   });
 
-  it('mutate contract state', async function () {
+  it('mutates contract state', async function () {
     const otherAccount = pubKeyToHex(Keypair.generate().publicKey);
     const transferAmount = ethers.utils.parseEther('0.9');
 

@@ -4,7 +4,7 @@ JavaScript Client to use to deploy and interact with Solang-compiled Solidity co
 
 ### Documentation
 
-View docs [here](https://vbstreetz.github.io/solana-solidity.js/examples/erc20.html).
+View docs [here](https://vbstreetz.github.io/solana-solidity.js).
 
 ### Getting started
 
@@ -27,7 +27,7 @@ This outputs `*.abi` and `bundle.so` files.
 
 ```typescript
 import { Contract, Program, newAccountWithLamports } from 'solana-solidity';
-import ERC20_CONTRACT_ABI from './erc20.abi';
+import CONTRACT_ABI from './MyContract.abi';
 import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
 
 (async function () {
@@ -39,13 +39,18 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   const program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
 
   // deploy new contract
+  const contractName = 'MyContract';
+  const contractAbi = CONTRACT_ABI;
+  const constructorArgs = [args...];
+  const storage = 8192 * 8;
+  const seeds = [];
   const token = await Contract.deploy(
     program,
-    'ERC20',
-    ERC20_CONTRACT_ABI,
-    [NAME, SYMBOL, TOTAL_SUPPLY],
-    [],
-    8192 * 8
+    contractName,
+    contractAbi,
+    constructorArgs,
+    seeds,
+    storage
   );
   console.log(await token.functions.symbol());
 
@@ -53,7 +58,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   const token2 = await Contract.get(
     program,
     token.getStorageKeyPair(),
-    ERC20_CONTRACT_ABI
+    CONTRACT_ABI
   );
 
   // subscribe to events

@@ -7,9 +7,7 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
-
 import { EventManager } from './events';
-
 export class Program {
   public events: EventManager;
 

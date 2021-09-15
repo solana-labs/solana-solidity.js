@@ -1,33 +1,34 @@
 # Setup
 
+This is a short guide into deploying and interacting with the standard `ERC20.sol` Solidity contract:
+
 1. Install the [Solang Compiler](https://solang.readthedocs.io/en/latest/).
-2. Install the library:
+
+2. Compile the Solidity contract:
 
 ```
-npm install solana-solidity
+solang ERC20.sol --target solana -v
 ```
 
-3. Compile the Solidity contract:
+This will output a `ERC20.abi` and `bundle.so` files.
 
-```
-solang MyContract.sol --target solana -v
-```
-
-```bash
-cd solana-solidity.js/examples/erc20
-```
-
-4. Start the [Solana test validator](https://docs.solana.com/developing/test-validator).
+3. Start the [Solana Test Validator](https://docs.solana.com/developing/test-validator).
 
 ```bash
 solana-test-validator
+```
+
+4. Install the library:
+
+```
+npm install solana-solidity
 ```
 
 5. Deploy and interact with the contract on Solana!
 
 ```typescript
 import { Contract, Program, newAccountWithLamports } from 'solana-solidity';
-import ERC20_CONTRACT_ABI from './erc20.abi';
+import ERC20_CONTRACT_ABI from './ERC20.abi';
 import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
 
 (async function () {

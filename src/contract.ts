@@ -18,7 +18,7 @@ export class Contract {
     program: Program,
     contractName: string,
     contractAbiData: string,
-    params: any[],
+    constructorParams: any[],
     seeds: any[] = [],
     contractStorageSize: number = 2048
   ): Promise<Contract> {
@@ -26,7 +26,7 @@ export class Contract {
       contractStorageSize
     );
     const abi = new ethers.utils.Interface(contractAbiData);
-    const input = abi.encodeDeploy(params);
+    const input = abi.encodeDeploy(constructorParams);
 
     let hash = ethers.utils.keccak256(Buffer.from(contractName));
 
@@ -38,7 +38,7 @@ export class Contract {
       Buffer.from(input.replace('0x', ''), 'hex'),
     ]);
 
-    console.log('calling constructor [' + params + ']');
+    console.log('calling constructor [' + constructorParams + ']');
 
     const instruction = new TransactionInstruction({
       keys: [
@@ -214,8 +214,6 @@ export class Contract {
   getStorageKeyPair(): Keypair {
     return this.contractStorageAccount;
   }
-
-  event(eventName: string, ...args: any[]) {}
 
   /**
    * Invokes the given callback every time the given event is emitted.
