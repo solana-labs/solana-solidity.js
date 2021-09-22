@@ -7,14 +7,19 @@ import {
   SYSVAR_CLOCK_PUBKEY,
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
-
-const returnDataPrefix = 'Program return: ';
-
 import { encodeSeeds } from './utils';
 import { Program } from './program';
-import { encode } from 'querystring';
+
+const LOG_RETURN_PREFIX = 'Program return: ';
+const LOG_COMPUTE_UNITS_RE = /consumed (\d+) of (\d+) compute units/i;
+
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
+
+export class TxError extends Error {
+  public logs: string[];
+  public computeUnitsUsed: number;
+}
 
 export class Contract {
   static async deploy(
@@ -195,7 +200,7 @@ export class Contract {
         throw 'error is not falsy';
       }
 
-      const encoded = this.parseTxLogs(logs!);
+      const { encoded, computeUnitsUsed } = this.parseTxLogs(logs!);
 
       if (!encoded) {
         throw 'return data not set';
@@ -209,16 +214,19 @@ export class Contract {
         ['string'],
         ethers.utils.hexDataSlice(encoded, 4)
       );
-      // console.log(revertReason.toString());
+      // console.log(revertReason.toString(), computeUnitsUsed);
 
-      throw new Error(revertReason.toString());
+      const txErr = new TxError(revertReason.toString());
+      txErr.logs = logs;
+      txErr.computeUnitsUsed = computeUnitsUsed;
+      throw txErr;
     }
 
     if (fragment.outputs?.length) {
       const parsedTx =
         await this.program.connection.getParsedConfirmedTransaction(sig);
       const logs = parsedTx!.meta?.logMessages!;
-      const encoded = this.parseTxLogs(logs);
+      const {encoded} = this.parseTxLogs(logs);
       const returns = this.abi.decodeFunctionResult(fragment, encoded);
 
       // let debug = ' returns [';
@@ -269,12 +277,17 @@ export class Contract {
 
   private parseTxLogs(logs: string[]) {
     let encoded = null;
+    let computeUnitsUsed = 0;
     for (let message of logs) {
-      if (message.startsWith(returnDataPrefix)) {
-        let [, returnData] = message.slice(returnDataPrefix.length).split(' ');
+      if (message.startsWith(LOG_RETURN_PREFIX)) {
+        let [, returnData] = message.slice(LOG_RETURN_PREFIX.length).split(' ');
         encoded = Buffer.from(returnData, 'base64');
       }
+      const match = message.match(LOG_COMPUTE_UNITS_RE);
+      if (match) {
+        computeUnitsUsed = Number(match[1]);
+      }
     }
-    return encoded;
+    return { encoded, computeUnitsUsed };
   }
 }

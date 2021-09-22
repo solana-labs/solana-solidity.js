@@ -51,6 +51,8 @@ describe('Errors', () => {
       res = await errors.functions.doRevert(true);
     } catch (e) {
       expect(e.message).toBe('Do the revert thing');
+      expect(e.computeUnitsUsed).toBe(1020);
+      expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
 
