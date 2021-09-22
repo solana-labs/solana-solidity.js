@@ -15,10 +15,10 @@ View docs [here](https://vbstreetz.github.io/solana-solidity.js).
 npm install solana-solidity
 ```
 
-3. Compile the Solidity contract:
+3. Compile the Solidity contract. For example, given the popular [ERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol) contract:
 
 ```
-solang MyContract.sol --target solana -v
+solang ERC20.sol --target solana -v
 ```
 
 This outputs `*.abi` and `bundle.so` files.
@@ -27,19 +27,19 @@ This outputs `*.abi` and `bundle.so` files.
 
 ```typescript
 import { Contract, Program, newAccountWithLamports } from 'solana-solidity';
-import CONTRACT_ABI from './MyContract.abi';
+import CONTRACT_ABI from './ERC20.abi';
 import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
 
 (async function () {
   const connection: Connection = new Connection(
     'http://localhost:8899',
-    'recent'
+    'confirmed'
   );
   const payerAccount = newAccountWithLamports();
   const program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
 
   // deploy new contract
-  const contractName = 'MyContract';
+  const contractName = 'ERC20';
   const contractAbi = CONTRACT_ABI;
   const constructorArgs = [args...];
   const storage = 8192 * 8;
@@ -54,7 +54,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   );
   console.log(await token.functions.symbol());
 
-  // load existing contract
+  // load an existing contract
   const token2 = await Contract.get(
     program,
     token.getStorageKeyPair(),

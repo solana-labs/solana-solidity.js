@@ -34,7 +34,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
 (async function () {
   const connection: Connection = new Connection(
     'http://localhost:8899',
-    'recent'
+    'confirmed'
   );
   const payerAccount = newAccountWithLamports();
   const program = await Program.deploy(connection, payerAccount, PROGRAM_SO);

@@ -80,12 +80,12 @@ export class Program {
       [this.payerAccount, account],
       {
         skipPreflight: false,
-        commitment: 'recent',
+        commitment: 'confirmed',
         preflightCommitment: undefined,
       }
     );
 
-    console.log('contract storage account', account.publicKey.toBase58());
+    // console.log('contract storage account', account.publicKey.toBase58());
 
     return account;
   }

@@ -27,7 +27,7 @@ describe('ERC20', () => {
   let wallet: string;
 
   before(async function () {
-    this.timeout(50000);
+    this.timeout(150000);
 
     let connection = getConnection();
     let payerAccount = await newAccountWithLamports(connection);
@@ -38,6 +38,8 @@ describe('ERC20', () => {
   beforeEach(async function () {});
 
   it('deploys new contracts', async function () {
+    this.timeout(150000);
+
     token = await Contract.deploy(
       program,
       'ERC20',

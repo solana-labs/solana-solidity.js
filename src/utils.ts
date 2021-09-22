@@ -58,7 +58,7 @@ export async function newAccountWithLamports(
 
 export function getConnection(rpcUrl?: string): Connection {
   let url = rpcUrl || process.env.RPC_URL || DEFAULT_URL;
-  return new Connection(url, 'recent');
+  return new Connection(url, 'confirmed');
 }
 
 export async function loadProgram(

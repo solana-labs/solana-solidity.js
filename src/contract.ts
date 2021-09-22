@@ -8,8 +8,11 @@ import {
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
 
+const returnDataPrefix = 'Program return: ';
+
 import { encodeSeeds } from './utils';
 import { Program } from './program';
+import { encode } from 'querystring';
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 
@@ -38,7 +41,7 @@ export class Contract {
       Buffer.from(input.replace('0x', ''), 'hex'),
     ]);
 
-    console.log('calling constructor [' + constructorParams + ']');
+    // debug('calling constructor [' + constructorParams + ']');
 
     const instruction = new TransactionInstruction({
       keys: [
@@ -58,7 +61,7 @@ export class Contract {
       [program.payerAccount],
       {
         skipPreflight: false,
-        commitment: 'recent',
+        commitment: 'confirmed',
         preflightCommitment: undefined,
       }
     );
@@ -119,8 +122,7 @@ export class Contract {
     signers: Keypair[] = [],
     caller: PublicKey | undefined = undefined
   ): Promise<ethers.utils.Result> {
-    let fragment = this.abi.getFunction(name);
-
+    const fragment = this.abi.getFunction(name);
     const input = this.abi.encodeFunctionData(name, params);
 
     const data = Buffer.concat([
@@ -131,14 +133,12 @@ export class Contract {
       Buffer.from(input.replace('0x', ''), 'hex'),
     ]);
 
-    console.log('calling function ' + name + ' [' + params + ']');
+    // debug('calling function ' + name + ' [' + params + ']');
 
-    let keys = [];
-
+    const keys = [];
     seeds.forEach((seed) => {
       keys.push({ pubkey: seed.address, isSigner: false, isWritable: true });
     });
-
     keys.push({
       pubkey: this.contractStorageAccount.publicKey,
       isSigner: false,
@@ -154,9 +154,12 @@ export class Contract {
       isSigner: false,
       isWritable: false,
     });
-
     for (let i = 0; i < pubkeys.length; i++) {
-      keys.push({ pubkey: pubkeys[i], isSigner: false, isWritable: true });
+      keys.push({
+        pubkey: pubkeys[i],
+        isSigner: false,
+        isWritable: (i & 1) == 1,
+      });
     }
 
     const instruction = new TransactionInstruction({
@@ -167,35 +170,63 @@ export class Contract {
 
     signers.unshift(this.program.payerAccount);
 
-    await sendAndConfirmTransaction(
-      this.program.connection,
-      new Transaction().add(instruction),
-      signers,
-      {
-        skipPreflight: false,
-        commitment: 'recent',
-        preflightCommitment: undefined,
+    let sig;
+    try {
+      sig = await sendAndConfirmTransaction(
+        this.program.connection,
+        new Transaction().add(instruction),
+        signers,
+        {
+          skipPreflight: false,
+          commitment: 'confirmed',
+          preflightCommitment: undefined,
+        }
+      );
+    } catch {
+      const {
+        value: { err, logs },
+      } = await this.program.connection.simulateTransaction(
+        new Transaction().add(instruction),
+        signers
+      );
+      // console.log(logs);
+
+      if (!err) {
+        throw 'error is not falsy';
       }
-    );
+
+      const encoded = this.parseTxLogs(logs!);
+
+      if (!encoded) {
+        throw 'return data not set';
+      }
+
+      if (encoded?.readUInt32BE(0) != 0x08c379a0) {
+        throw 'signature not correct';
+      }
+
+      const revertReason = ethers.utils.defaultAbiCoder.decode(
+        ['string'],
+        ethers.utils.hexDataSlice(encoded, 4)
+      );
+      // console.log(revertReason.toString());
+
+      throw new Error(revertReason.toString());
+    }
 
     if (fragment.outputs?.length) {
-      const accountInfo = await this.program.connection.getAccountInfo(
-        this.contractStorageAccount.publicKey
-      );
+      const parsedTx =
+        await this.program.connection.getParsedConfirmedTransaction(sig);
+      const logs = parsedTx!.meta?.logMessages!;
+      const encoded = this.parseTxLogs(logs);
+      const returns = this.abi.decodeFunctionResult(fragment, encoded);
 
-      let length = Number(accountInfo!.data.readUInt32LE(4));
-      let offset = Number(accountInfo!.data.readUInt32LE(8));
-
-      let encoded = accountInfo!.data.slice(offset, length + offset);
-
-      let returns = this.abi.decodeFunctionResult(fragment, encoded);
-
-      let debug = ' returns [';
-      for (let i = 0; i.toString() in returns; i++) {
-        debug += returns[i];
-      }
-      debug += ']';
-      console.log(debug);
+      // let debug = ' returns [';
+      // for (let i = 0; i.toString() in returns; i++) {
+      //   debug += returns[i];
+      // }
+      // debug += ']';
+      // console.log(debug);
 
       return returns;
     } else {
@@ -234,5 +265,16 @@ export class Contract {
    */
   public async off(listener: number): Promise<void> {
     return await this.program.events.removeEventListener(listener);
+  }
+
+  private parseTxLogs(logs: string[]) {
+    let encoded = null;
+    for (let message of logs) {
+      if (message.startsWith(returnDataPrefix)) {
+        let [, returnData] = message.slice(returnDataPrefix.length).split(' ');
+        encoded = Buffer.from(returnData, 'base64');
+      }
+    }
+    return encoded;
   }
 }
