@@ -11,13 +11,13 @@ import {
 
 const PROGRAM_SO = fs.readFileSync(path.join(__dirname, '../build/bundle.so'));
 const CONTRACT_ABI = fs.readFileSync(
-  path.join(__dirname, '../build/Errors.abi'),
+  path.join(__dirname, '../build/Calc.abi'),
   'utf-8'
 );
 
-describe('Errors', () => {
+describe('Calc', () => {
   let program: Program;
-  let errors: Contract;
+  let calc: Contract;
   let wallet: string;
 
   before(async function () {
@@ -31,30 +31,19 @@ describe('Errors', () => {
 
   beforeEach(async function () {});
 
-  it('errors', async function () {
+  it('calc', async function () {
     this.timeout(50000);
 
-    errors = await Contract.deploy(
+    calc = await Contract.deploy(
       program,
-      'Errors',
+      'Calc',
       CONTRACT_ABI,
       [],
       [],
       8192 * 8
     );
 
-    let res = await errors.functions.doRevert(false);
-    expect(res[0].toString()).toBe('3124445');
-
-    try {
-      res = await errors.functions.doRevert(true);
-    } catch (e) {
-      expect(e.message).toBe('Do the revert thing');
-      expect(e.computeUnitsUsed).toBe(1020);
-      expect(e.logs.length).toBeGreaterThan(1);
-      return;
-    }
-
-    throw new Error('does not throw');
+    let res = await calc.simulate.add(1, 2);
+    expect(res[0].toString()).toBe('3');
   });
 });

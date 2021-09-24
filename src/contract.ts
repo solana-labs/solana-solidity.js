@@ -84,6 +84,7 @@ export class Contract {
 
   public abi: ethers.utils.Interface;
   readonly functions: { [name: string]: ContractFunction };
+  readonly simulate: { [name: string]: ContractFunction };
 
   constructor(
     public program: Program,
@@ -92,8 +93,10 @@ export class Contract {
   ) {
     this.abi = new ethers.utils.Interface(abiData);
     this.functions = {};
+    this.simulate = {};
     Object.entries(this.abi.functions).forEach(([, frag]) => {
       this.functions[frag.name] = this.buildCall(frag);
+      this.simulate[frag.name] = this.buildSimulateCall(frag);
     });
   }
 
@@ -115,6 +118,35 @@ export class Contract {
         return this.call(fragment.name, args, pubkeys, seeds, signers, caller);
       } else {
         return this.call(fragment.name, args);
+      }
+    };
+  }
+
+  buildSimulateCall(fragment: ethers.utils.Fragment): ContractFunction {
+    return (...args: Array<any>) => {
+      const last = args[args.length - 1];
+      if (typeof last === 'object') {
+        const {
+          pubkeys,
+          seeds,
+          signers,
+          caller,
+        }: {
+          pubkeys: PublicKey[];
+          seeds: any[];
+          signers: Keypair[];
+          caller: PublicKey | undefined;
+        } = last;
+        return this.simulateCall(
+          fragment.name,
+          args,
+          pubkeys,
+          seeds,
+          signers,
+          caller
+        );
+      } else {
+        return this.simulateCall(fragment.name, args);
       }
     };
   }
@@ -197,17 +229,17 @@ export class Contract {
       // console.log(logs);
 
       if (!err) {
-        throw 'error is not falsy';
+        throw new Error('error is not falsy');
       }
 
       const { encoded, computeUnitsUsed } = this.parseTxLogs(logs!);
 
       if (!encoded) {
-        throw 'return data not set';
+        throw new Error('return data not set');
       }
 
       if (encoded?.readUInt32BE(0) != 0x08c379a0) {
-        throw 'signature not correct';
+        throw new Error('signature not correct');
       }
 
       const revertReason = ethers.utils.defaultAbiCoder.decode(
@@ -226,6 +258,107 @@ export class Contract {
       await this.program.connection.getParsedConfirmedTransaction(sig);
     const logs = parsedTx!.meta?.logMessages!;
     const { encoded } = this.parseTxLogs(logs);
+
+    if (fragment.outputs?.length) {
+      const returns = this.abi.decodeFunctionResult(fragment, encoded);
+
+      // let debug = ' returns [';
+      // for (let i = 0; i.toString() in returns; i++) {
+      //   debug += returns[i];
+      // }
+      // debug += ']';
+      // console.log(debug);
+
+      return returns;
+    } else {
+      return [];
+    }
+  }
+
+  private async simulateCall(
+    name: string,
+    params: any[],
+    pubkeys: PublicKey[] = [],
+    seeds: any[] = [],
+    signers: Keypair[] = [],
+    caller: PublicKey | undefined = undefined
+  ): Promise<ethers.utils.Result> {
+    const fragment = this.abi.getFunction(name);
+    const input = this.abi.encodeFunctionData(name, params);
+
+    const data = Buffer.concat([
+      this.contractStorageAccount.publicKey.toBuffer(),
+      (caller || this.program.payerAccount.publicKey).toBuffer(),
+      Buffer.from('00000000', 'hex'),
+      encodeSeeds(seeds),
+      Buffer.from(input.replace('0x', ''), 'hex'),
+    ]);
+
+    // debug('calling function ' + name + ' [' + params + ']');
+
+    const keys = [];
+    seeds.forEach((seed) => {
+      keys.push({ pubkey: seed.address, isSigner: false, isWritable: true });
+    });
+    keys.push({
+      pubkey: this.contractStorageAccount.publicKey,
+      isSigner: false,
+      isWritable: true,
+    });
+    keys.push({
+      pubkey: SYSVAR_CLOCK_PUBKEY,
+      isSigner: false,
+      isWritable: false,
+    });
+    keys.push({
+      pubkey: PublicKey.default,
+      isSigner: false,
+      isWritable: false,
+    });
+    for (let i = 0; i < pubkeys.length; i++) {
+      keys.push({
+        pubkey: pubkeys[i],
+        isSigner: false,
+        isWritable: (i & 1) == 1,
+      });
+    }
+
+    const instruction = new TransactionInstruction({
+      keys,
+      programId: this.program.programAccount.publicKey,
+      data,
+    });
+
+    signers.unshift(this.program.payerAccount);
+
+    const {
+      value: { err, logs },
+    } = await this.program.connection.simulateTransaction(
+      new Transaction().add(instruction),
+      signers
+    );
+    // console.log(logs);
+    const { encoded, computeUnitsUsed } = this.parseTxLogs(logs!);
+    if (!encoded) {
+      throw new Error('return data not set');
+    }
+
+    if (err) {
+      if (encoded?.readUInt32BE(0) != 0x08c379a0) {
+        throw new Error('signature not correct');
+      }
+
+      const revertReason = ethers.utils.defaultAbiCoder.decode(
+        ['string'],
+        ethers.utils.hexDataSlice(encoded, 4)
+      );
+      // console.log(revertReason.toString(), computeUnitsUsed);
+
+      const txErr = new TxError(revertReason.toString());
+      txErr.logs = logs;
+      txErr.computeUnitsUsed = computeUnitsUsed;
+      throw txErr;
+    }
 
     if (fragment.outputs?.length) {
       const returns = this.abi.decodeFunctionResult(fragment, encoded);
