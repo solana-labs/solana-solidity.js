@@ -51,10 +51,7 @@ export class Program {
     public payerAccount: Keypair,
     public programAccount: Keypair
   ) {
-    this.events = new EventManager(
-      this.programAccount.publicKey,
-      this.connection
-    );
+    this.events = new EventManager(this.connection);
   }
 
   async createStorageAccount(space: number): Promise<Keypair> {

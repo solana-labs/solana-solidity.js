@@ -7,12 +7,12 @@ import {
   SYSVAR_CLOCK_PUBKEY,
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
+
 import { encodeSeeds } from './utils';
 import { Program } from './program';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_COMPUTE_UNITS_RE = /consumed (\d+) of (\d+) compute units/i;
-
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 
@@ -222,11 +222,12 @@ export class Contract {
       throw txErr;
     }
 
+    const parsedTx =
+      await this.program.connection.getParsedConfirmedTransaction(sig);
+    const logs = parsedTx!.meta?.logMessages!;
+    const { encoded } = this.parseTxLogs(logs);
+
     if (fragment.outputs?.length) {
-      const parsedTx =
-        await this.program.connection.getParsedConfirmedTransaction(sig);
-      const logs = parsedTx!.meta?.logMessages!;
-      const {encoded} = this.parseTxLogs(logs);
       const returns = this.abi.decodeFunctionResult(fragment, encoded);
 
       // let debug = ' returns [';
@@ -265,7 +266,7 @@ export class Contract {
     eventName: string,
     callback: (event: any, slot: number) => void
   ): number {
-    return this.program.events.addEventListener(eventName, callback);
+    return this.program.events.addEventListener(this.abi, eventName, callback);
   }
 
   /**
@@ -278,16 +279,21 @@ export class Contract {
   private parseTxLogs(logs: string[]) {
     let encoded = null;
     let computeUnitsUsed = 0;
+
     for (let message of logs) {
+      // return
       if (message.startsWith(LOG_RETURN_PREFIX)) {
         let [, returnData] = message.slice(LOG_RETURN_PREFIX.length).split(' ');
         encoded = Buffer.from(returnData, 'base64');
       }
-      const match = message.match(LOG_COMPUTE_UNITS_RE);
-      if (match) {
-        computeUnitsUsed = Number(match[1]);
+
+      // compute units used
+      const computeUnitsUsedMatch = message.match(LOG_COMPUTE_UNITS_RE);
+      if (computeUnitsUsedMatch) {
+        computeUnitsUsed = Number(computeUnitsUsedMatch[1]);
       }
     }
+
     return { encoded, computeUnitsUsed };
   }
 }
