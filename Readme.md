@@ -42,15 +42,12 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   const contractName = 'ERC20';
   const contractAbi = CONTRACT_ABI;
   const constructorArgs = [args...];
-  const storage = 8192 * 8;
-  const seeds = [];
+
   const token = await Contract.deploy(
     program,
     contractName,
     contractAbi,
     constructorArgs,
-    seeds,
-    storage
   );
   console.log(await token.functions.symbol());
 
@@ -62,9 +59,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   );
 
   // subscribe to events
-  const spender = '0x...';
-  const event = token2.event('Approve', spender);
-  token2.on(event, (owner: string, spender: string, value: string) => {
+  token2.on('Approve', (owner: string, spender: string, value: string) => {
     console.log({
       owner,
       spender,

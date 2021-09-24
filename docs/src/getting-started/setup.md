@@ -45,8 +45,6 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
     'ERC20',
     ERC20_CONTRACT_ABI,
     [NAME, SYMBOL, TOTAL_SUPPLY],
-    [],
-    8192 * 8
   );
   console.log(await token.functions.symbol());
 
@@ -58,9 +56,8 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   );
 
   // subscribe to events
-  const spender = '0x...';
-  const event = token2.event('Approve', spender);
-  token2.on(event, (owner: string, spender: string, value: string) => {
+
+  token2.on('Approve', (owner: string, spender: string, value: string) => {
     console.log({
       owner,
       spender,
