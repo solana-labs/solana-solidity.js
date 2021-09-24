@@ -5,13 +5,26 @@ import { parseLogTopic, parseTxError, parseTxLogs } from '../../src/logs';
 
 describe('Logs', () => {
   it('parses "Program return:" logs', async function () {
-    const { encoded, computeUnitsUsed, log } = parseTxLogs([
-      'Program 9S1tmrZqgd4KpMuAkyCjEmDG4dftyP8pJijkjSTKV1EP invoke [1]',
-      'Program 9S1tmrZqgd4KpMuAkyCjEmDG4dftyP8pJijkjSTKV1EP consumed 1023 of 200000 compute units',
-      'Program return: 9S1tmrZqgd4KpMuAkyCjEmDG4dftyP8pJijkjSTKV1EP CMN5oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABNEbyB0aGUgcmV2ZXJ0IHRoaW5nAAAAAAAAAAAAAAAAAA==',
-      'Program 9S1tmrZqgd4KpMuAkyCjEmDG4dftyP8pJijkjSTKV1EP failed: custom program error: 0x0',
+    const { encoded, computeUnitsUsed } = parseTxLogs([
+      'Program CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif invoke [1]',
+      'Program CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif consumed 837 of 200000 compute units',
+      'Program return: CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABlNvbGFuYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      'Program CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif success',
     ]);
-    expect(computeUnitsUsed).toEqual(1023);
+    expect(computeUnitsUsed).toEqual(837);
+
+    const abi = new ethers.utils.Interface([
+      {
+        name: 'name',
+        type: 'function',
+        inputs: [],
+        outputs: [{ name: '', type: 'string' }],
+        stateMutability: 'view',
+      },
+    ]);
+    const fragment = abi.getFunction('name');
+    const args = abi.decodeFunctionResult(fragment, encoded);
+    expect(args[0]).toEqual('Solana');
   });
 
   it('parses errors in "Program return:" logs', async function () {
