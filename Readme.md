@@ -74,6 +74,20 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
 })();
 ```
 
+## Test
+
+### Unit tests:
+
+```
+make test-unit
+```
+
+### Integration
+
+```
+make test-all-examples
+```
+
 ## Licence
 
 Apache License 2.0

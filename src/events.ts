@@ -3,7 +3,7 @@ import { PublicKey, Connection } from '@solana/web3.js';
 import * as assert from 'assert';
 import { ethers } from 'ethers';
 
-const LOG_DATA_PREFIX = 'Program data: ';
+import { parseLogTopic } from './logs';
 
 // Deserialized event data.
 export type EventData = {
@@ -152,24 +152,7 @@ export class EventParser {
 
   // Handles logs from *this* program.
   private handleLog(log: string): EventData | null {
-    // Program data log.
-    if (log.startsWith(LOG_DATA_PREFIX)) {
-      const fields = log.slice(LOG_DATA_PREFIX.length).split(' ');
-      if (fields.length == 2) {
-        const topicData = Buffer.from(fields[0], 'base64');
-        const topics: string[] = [];
-        for (let offset = 0; offset < topicData.length; offset += 32) {
-          topics.push(
-            '0x' + topicData.subarray(offset, offset + 32).toString('hex')
-          );
-        }
-        const data = '0x' + Buffer.from(fields[1], 'base64').toString('hex');
-        return { data, topics };
-      }
-    }
-
-    // Other log.
-    return null;
+    return parseLogTopic(log);
   }
 }
 

@@ -11,17 +11,9 @@ import { ethers } from 'ethers';
 import { EventCallback } from './events';
 import { encodeSeeds } from './utils';
 import { Program } from './program';
-
-const LOG_RETURN_PREFIX = 'Program return: ';
-const LOG_LOG_PREFIX = 'Program log: ';
-const LOG_COMPUTE_UNITS_RE = /consumed (\d+) of (\d+) compute units/i;
+import { parseTxError, parseTxLogs } from './logs';
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
-
-export class TxError extends Error {
-  public logs: string[];
-  public computeUnitsUsed: number;
-}
 
 export class Contract {
   static async deploy(
@@ -234,15 +226,15 @@ export class Contract {
         throw new Error('error is not falsy');
       }
 
-      const { log, encoded, computeUnitsUsed } = this.parseTxLogs(logs!);
+      const { log, encoded, computeUnitsUsed } = parseTxLogs(logs!);
 
-      throw this.parseTxError(encoded, computeUnitsUsed, log, logs);
+      throw parseTxError(encoded, computeUnitsUsed, log, logs);
     }
 
     const parsedTx =
       await this.program.connection.getParsedConfirmedTransaction(sig);
     const logs = parsedTx!.meta?.logMessages!;
-    const { encoded } = this.parseTxLogs(logs);
+    const { encoded } = parseTxLogs(logs);
 
     if (fragment.outputs?.length) {
       if (!encoded) {
@@ -318,10 +310,10 @@ export class Contract {
       signers
     );
     // console.log(logs);
-    const { encoded, computeUnitsUsed, log } = this.parseTxLogs(logs!);
+    const { encoded, computeUnitsUsed, log } = parseTxLogs(logs!);
 
     if (err) {
-      throw this.parseTxError(encoded, computeUnitsUsed, log, logs);
+      throw parseTxError(encoded, computeUnitsUsed, log, logs);
     }
 
     if (fragment.outputs?.length) {
@@ -363,62 +355,5 @@ export class Contract {
    */
   public async off(listener: number): Promise<void> {
     return await this.program.events.removeEventListener(listener);
-  }
-
-  private parseTxLogs(logs: string[]) {
-    let encoded = null;
-    let computeUnitsUsed = 0;
-    let log;
-
-    for (let message of logs) {
-      // return
-      if (message.startsWith(LOG_RETURN_PREFIX)) {
-        let [, returnData] = message.slice(LOG_RETURN_PREFIX.length).split(' ');
-        encoded = Buffer.from(returnData, 'base64');
-      }
-
-      // log
-      if (message.startsWith(LOG_LOG_PREFIX)) {
-        log = message.slice(LOG_LOG_PREFIX.length);
-      }
-
-      // compute units used
-      const computeUnitsUsedMatch = message.match(LOG_COMPUTE_UNITS_RE);
-      if (computeUnitsUsedMatch) {
-        computeUnitsUsed = Number(computeUnitsUsedMatch[1]);
-      }
-    }
-
-    return { encoded, computeUnitsUsed, log };
-  }
-
-  private parseTxError(
-    encoded: Buffer | null,
-    computeUnitsUsed: number,
-    log: string,
-    logs: string[]
-  ) {
-    let txErr: TxError;
-
-    if (log) {
-      txErr = new TxError(log);
-    } else {
-      if (!encoded) {
-        txErr = new TxError('return data or log not set');
-      } else if (encoded?.readUInt32BE(0) != 0x08c379a0) {
-        txErr = new TxError('signature not correct');
-      } else {
-        const revertReason = ethers.utils.defaultAbiCoder.decode(
-          ['string'],
-          ethers.utils.hexDataSlice(encoded, 4)
-        );
-        // console.log(revertReason.toString(), computeUnitsUsed);
-        txErr = new TxError(revertReason.toString());
-      }
-    }
-
-    txErr.logs = logs;
-    txErr.computeUnitsUsed = computeUnitsUsed;
-    return txErr;
   }
 }
