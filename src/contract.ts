@@ -8,6 +8,7 @@ import {
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
 
+import { EventCallback } from './events';
 import { encodeSeeds } from './utils';
 import { Program } from './program';
 
@@ -244,16 +245,11 @@ export class Contract {
     const { encoded } = this.parseTxLogs(logs);
 
     if (fragment.outputs?.length) {
-      const returns = this.abi.decodeFunctionResult(fragment, encoded);
+      if (!encoded) {
+        throw new Error('return data not set');
+      }
 
-      // let debug = ' returns [';
-      // for (let i = 0; i.toString() in returns; i++) {
-      //   debug += returns[i];
-      // }
-      // debug += ']';
-      // console.log(debug);
-
-      return returns;
+      return this.abi.decodeFunctionResult(fragment, encoded);
     } else {
       return [];
     }
@@ -333,16 +329,7 @@ export class Contract {
         throw new Error('return data not set');
       }
 
-      const returns = this.abi.decodeFunctionResult(fragment, encoded);
-
-      // let debug = ' returns [';
-      // for (let i = 0; i.toString() in returns; i++) {
-      //   debug += returns[i];
-      // }
-      // debug += ']';
-      // console.log(debug);
-
-      return returns;
+      return this.abi.decodeFunctionResult(fragment, encoded);
     } else {
       return [];
     }
@@ -367,10 +354,7 @@ export class Contract {
    * @param callback  The function to invoke whenever the event is emitted from
    *                  program logs.
    */
-  public on(
-    eventName: string,
-    callback: (event: any, slot: number) => void
-  ): number {
+  public on(eventName: string, callback: EventCallback): number {
     return this.program.events.addEventListener(this.abi, eventName, callback);
   }
 

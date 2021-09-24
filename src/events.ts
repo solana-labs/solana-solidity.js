@@ -12,7 +12,7 @@ export type EventData = {
 };
 
 // Event callback.
-export type EventCallback = (event: any, slot: number) => void;
+export type EventCallback = (...args: any) => void;
 
 export class EventManager {
   /**
@@ -59,7 +59,7 @@ export class EventManager {
   public addEventListener(
     abi: ethers.utils.Interface,
     eventName: string,
-    callback: (event: any, slot: number) => void
+    callback: EventCallback
   ): number {
     let listener = this._listenerIdCount;
     this._listenerIdCount += 1;
@@ -97,7 +97,7 @@ export class EventManager {
             console.log(e);
           }
           if (event) {
-            callback(event.args, ctx.slot);
+            callback(...event.args);
           }
         }
       });

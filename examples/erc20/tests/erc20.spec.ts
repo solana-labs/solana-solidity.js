@@ -89,7 +89,7 @@ describe('ERC20', () => {
     expect(res[0]).toEqual(TOTAL_SUPPLY.sub(transferAmount));
   });
 
-  it.skip('emits events', async function (done) {
+  it('emits events', async function () {
     const spenderAccount = pubKeyToHex(Keypair.generate().publicKey);
     const spendAmount = ethers.utils.parseEther('0.9');
 
@@ -101,16 +101,20 @@ describe('ERC20', () => {
       [],
       8192 * 8
     );
-    token.on('Approval', () =>
-      // owner: string, spender: string, value: ethers.BigNumber
-      {
-        // expect(owner).toEqual(wallet);
-        // expect(spender).toEqual(spenderAccount);
-        // expect(value.eq(spendAmount)).toBeTruthy;
-        done();
-      }
-    );
 
-    await token.functions.approve(spenderAccount, spendAmount);
+    await new Promise((resolve) => {
+      let listenId = token.on(
+        'Approval',
+        async (owner: string, spender: string, value: ethers.BigNumber) => {
+          expect(owner).toEqual(wallet);
+          expect(spender).toEqual(spenderAccount);
+          expect(value.eq(spendAmount)).toBeTruthy;
+          await token.off(listenId);
+          resolve(true);
+        }
+      );
+
+      token.functions.approve(spenderAccount, spendAmount);
+    });
   });
 });

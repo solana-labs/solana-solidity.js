@@ -44,7 +44,7 @@ describe('Events', () => {
     );
 
     await new Promise((resolve) => {
-      let listenId = events.on('First', async (args) => {
+      let listenId = events.on('First', async (...args) => {
         expect(args[0].toString()).toEqual('102');
         expect(args[1]).toEqual(true);
         expect(args[2]).toEqual('foobar');
@@ -59,7 +59,7 @@ describe('Events', () => {
     });
 
     await new Promise((resolve) => {
-      let listenId = events.on('Second', async (args) => {
+      let listenId = events.on('Second', async (...args) => {
         expect(args[0].toString()).toEqual('500332');
         expect(args[1]).toEqual('0x41424344');
         expect(args[2]).toEqual('0xcafe0123');
