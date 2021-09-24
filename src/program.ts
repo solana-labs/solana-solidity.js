@@ -82,8 +82,6 @@ export class Program {
       }
     );
 
-    // console.log('contract storage account', account.publicKey.toBase58());
-
     return account;
   }
 }

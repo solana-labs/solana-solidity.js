@@ -45,5 +45,11 @@ describe('Calc', () => {
 
     let res = await calc.simulate.add(1, 2);
     expect(res[0].toString()).toBe('3');
+
+    try {
+      await calc.simulate.div(1, 0);
+    } catch (e) {
+      expect(e.message).toBe('denominator should not be zero');
+    }
   });
 });

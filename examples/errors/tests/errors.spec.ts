@@ -27,12 +27,6 @@ describe('Errors', () => {
     let payerAccount = await newAccountWithLamports(connection);
     program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
     wallet = pubKeyToHex(program.payerAccount.publicKey);
-  });
-
-  beforeEach(async function () {});
-
-  it('errors', async function () {
-    this.timeout(50000);
 
     errors = await Contract.deploy(
       program,
@@ -42,7 +36,11 @@ describe('Errors', () => {
       [],
       8192 * 8
     );
+  });
 
+  beforeEach(async function () {});
+
+  it('catches reverts', async function () {
     let res = await errors.functions.doRevert(false);
     expect(res[0].toString()).toBe('3124445');
 
@@ -50,7 +48,39 @@ describe('Errors', () => {
       res = await errors.functions.doRevert(true);
     } catch (e) {
       expect(e.message).toBe('Do the revert thing');
-      expect(e.computeUnitsUsed).toBe(1020);
+      expect(e.computeUnitsUsed).toBe(1023);
+      expect(e.logs.length).toBeGreaterThan(1);
+      return;
+    }
+
+    throw new Error('does not throw');
+  });
+
+  it('catches requires', async function () {
+    let res = await errors.functions.doRequire(false);
+    expect(res[0].toString()).toBe('3124445');
+
+    try {
+      res = await errors.functions.doRequire(true);
+    } catch (e) {
+      expect(e.message).toBe('Do the require thing');
+      expect(e.computeUnitsUsed).toBe(753);
+      expect(e.logs.length).toBeGreaterThan(1);
+      return;
+    }
+
+    throw new Error('does not throw');
+  });
+
+  it('catches asserts', async function () {
+    let res = await errors.functions.doAssert(false);
+    expect(res[0].toString()).toBe('3124445');
+
+    try {
+      res = await errors.functions.doAssert(true);
+    } catch (e) {
+      expect(e.message).toBe('return data or log not set');
+      expect(e.computeUnitsUsed).toBe(558);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
