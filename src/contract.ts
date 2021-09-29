@@ -89,15 +89,18 @@ export class Contract {
     this.functions = {};
     this.simulate = {};
     Object.entries(this.abi.functions).forEach(([, frag]) => {
-      this.functions[frag.name] = this.buildCall(frag);
-      this.simulate[frag.name] = this.buildSimulateCall(frag);
+      this.functions[frag.name] = this.buildCall(false, frag);
+      this.simulate[frag.name] = this.buildCall(true, frag);
     });
   }
 
-  buildCall(fragment: ethers.utils.Fragment): ContractFunction {
+  buildCall(
+    simulate: boolean,
+    fragment: ethers.utils.Fragment
+  ): ContractFunction {
     return (...args: Array<any>) => {
       const last = args[args.length - 1];
-      if (typeof last === 'object') {
+      if (args.length > fragment.inputs.length && typeof last === 'object') {
         const {
           pubkeys,
           seeds,
@@ -109,43 +112,23 @@ export class Contract {
           signers: Keypair[];
           caller: PublicKey | undefined;
         } = last;
-        return this.call(fragment.name, args, pubkeys, seeds, signers, caller);
-      } else {
-        return this.call(fragment.name, args);
-      }
-    };
-  }
-
-  buildSimulateCall(fragment: ethers.utils.Fragment): ContractFunction {
-    return (...args: Array<any>) => {
-      const last = args[args.length - 1];
-      if (typeof last === 'object') {
-        const {
-          pubkeys,
-          seeds,
-          signers,
-          caller,
-        }: {
-          pubkeys: PublicKey[];
-          seeds: any[];
-          signers: Keypair[];
-          caller: PublicKey | undefined;
-        } = last;
-        return this.simulateCall(
+        return this.call(
+          simulate,
           fragment.name,
-          args,
+          args.slice(0, fragment.inputs.length),
           pubkeys,
           seeds,
           signers,
           caller
         );
       } else {
-        return this.simulateCall(fragment.name, args);
+        return this.call(simulate, fragment.name, args);
       }
     };
   }
 
   private async call(
+    simulate: boolean,
     name: string,
     params: any[],
     pubkeys: PublicKey[] = [],
@@ -201,19 +184,9 @@ export class Contract {
 
     signers.unshift(this.program.payerAccount);
 
-    let sig;
-    try {
-      sig = await sendAndConfirmTransaction(
-        this.program.connection,
-        new Transaction().add(instruction),
-        signers,
-        {
-          skipPreflight: false,
-          commitment: 'confirmed',
-          preflightCommitment: undefined,
-        }
-      );
-    } catch {
+    let encoded;
+
+    if (simulate) {
       const {
         value: { err, logs },
       } = await this.program.connection.simulateTransaction(
@@ -221,99 +194,49 @@ export class Contract {
         signers
       );
       // console.log(logs);
+      const { encoded: _encoded, computeUnitsUsed, log } = parseTxLogs(logs!);
 
-      if (!err) {
-        throw new Error('error is not falsy');
+      encoded = _encoded;
+
+      if (err) {
+        throw parseTxError(encoded, computeUnitsUsed, log, logs);
       }
-
-      const { log, encoded, computeUnitsUsed } = parseTxLogs(logs!);
-
-      throw parseTxError(encoded, computeUnitsUsed, log, logs);
-    }
-
-    const parsedTx =
-      await this.program.connection.getParsedConfirmedTransaction(sig);
-    const logs = parsedTx!.meta?.logMessages!;
-    const { encoded } = parseTxLogs(logs);
-
-    if (fragment.outputs?.length) {
-      if (!encoded) {
-        throw new Error('return data not set');
-      }
-
-      return this.abi.decodeFunctionResult(fragment, encoded);
     } else {
-      return [];
-    }
-  }
+      let sig;
+      try {
+        sig = await sendAndConfirmTransaction(
+          this.program.connection,
+          new Transaction().add(instruction),
+          signers,
+          {
+            skipPreflight: false,
+            commitment: 'confirmed',
+            preflightCommitment: undefined,
+          }
+        );
+      } catch {
+        const {
+          value: { err, logs },
+        } = await this.program.connection.simulateTransaction(
+          new Transaction().add(instruction),
+          signers
+        );
+        // console.log(logs);
 
-  private async simulateCall(
-    name: string,
-    params: any[],
-    pubkeys: PublicKey[] = [],
-    seeds: any[] = [],
-    signers: Keypair[] = [],
-    caller: PublicKey | undefined = undefined
-  ): Promise<ethers.utils.Result> {
-    const fragment = this.abi.getFunction(name);
-    const input = this.abi.encodeFunctionData(name, params);
+        if (!err) {
+          throw new Error('error is not falsy');
+        }
 
-    const data = Buffer.concat([
-      this.contractStorageAccount.publicKey.toBuffer(),
-      (caller || this.program.payerAccount.publicKey).toBuffer(),
-      Buffer.from('00000000', 'hex'),
-      encodeSeeds(seeds),
-      Buffer.from(input.replace('0x', ''), 'hex'),
-    ]);
+        const { log, encoded: _encoded, computeUnitsUsed } = parseTxLogs(logs!);
+        encoded = _encoded;
+        throw parseTxError(encoded, computeUnitsUsed, log, logs);
+      }
 
-    // debug('calling function ' + name + ' [' + params + ']');
-
-    const keys = [];
-    seeds.forEach((seed) => {
-      keys.push({ pubkey: seed.address, isSigner: false, isWritable: true });
-    });
-    keys.push({
-      pubkey: this.contractStorageAccount.publicKey,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: SYSVAR_CLOCK_PUBKEY,
-      isSigner: false,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: PublicKey.default,
-      isSigner: false,
-      isWritable: false,
-    });
-    for (let i = 0; i < pubkeys.length; i++) {
-      keys.push({
-        pubkey: pubkeys[i],
-        isSigner: false,
-        isWritable: (i & 1) == 1,
-      });
-    }
-
-    const instruction = new TransactionInstruction({
-      keys,
-      programId: this.program.programAccount.publicKey,
-      data,
-    });
-
-    signers.unshift(this.program.payerAccount);
-
-    const {
-      value: { err, logs },
-    } = await this.program.connection.simulateTransaction(
-      new Transaction().add(instruction),
-      signers
-    );
-    // console.log(logs);
-    const { encoded, computeUnitsUsed, log } = parseTxLogs(logs!);
-
-    if (err) {
-      throw parseTxError(encoded, computeUnitsUsed, log, logs);
+      const parsedTx =
+        await this.program.connection.getParsedConfirmedTransaction(sig);
+      const logs = parsedTx!.meta?.logMessages!;
+      const { encoded: _encoded } = parseTxLogs(logs);
+      encoded = _encoded;
     }
 
     if (fragment.outputs?.length) {
@@ -321,10 +244,13 @@ export class Contract {
         throw new Error('return data not set');
       }
 
-      return this.abi.decodeFunctionResult(fragment, encoded);
-    } else {
-      return [];
+      const result = this.abi.decodeFunctionResult(fragment, encoded);
+      if (fragment.outputs.length === 1) {
+        return result[0];
+      }
+      return result;
     }
+    return null;
   }
 
   async contractStorage(test: Program, upto: number): Promise<Buffer> {

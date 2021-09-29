@@ -50,19 +50,19 @@ describe('ERC20', () => {
     );
 
     let res = await token.functions.name();
-    expect(res[0].toString()).toEqual('Solana');
+    expect(res.toString()).toEqual('Solana');
 
     res = await token.functions.symbol();
-    expect(res[0].toString()).toEqual('SOL');
+    expect(res.toString()).toEqual('SOL');
 
     res = await token.functions.decimals();
-    expect(res[0]).toEqual(18);
+    expect(res).toEqual(18);
 
     res = await token.functions.totalSupply();
-    expect(res[0]).toEqual(TOTAL_SUPPLY);
+    expect(res).toEqual(TOTAL_SUPPLY);
 
     res = await token.functions.balanceOf(wallet);
-    expect(res[0]).toEqual(TOTAL_SUPPLY);
+    expect(res).toEqual(TOTAL_SUPPLY);
   });
 
   it('loads existing contracts', async function () {
@@ -73,7 +73,7 @@ describe('ERC20', () => {
     );
 
     let res = await token.functions.name();
-    expect(res[0].toString()).toEqual('Solana');
+    expect(res.toString()).toEqual('Solana');
   });
 
   it('mutates contract state', async function () {
@@ -83,10 +83,10 @@ describe('ERC20', () => {
     await token.functions.transfer(otherAccount, transferAmount);
 
     let res = await token.functions.balanceOf(otherAccount);
-    expect(res[0]).toEqual(transferAmount);
+    expect(res).toEqual(transferAmount);
 
     res = await token.functions.balanceOf(wallet);
-    expect(res[0]).toEqual(TOTAL_SUPPLY.sub(transferAmount));
+    expect(res).toEqual(TOTAL_SUPPLY.sub(transferAmount));
   });
 
   it('emits events', async function () {

@@ -42,7 +42,7 @@ describe('Errors', () => {
 
   it('catches reverts', async function () {
     let res = await errors.functions.doRevert(false);
-    expect(res[0].toString()).toBe('3124445');
+    expect(res.toString()).toBe('3124445');
 
     try {
       res = await errors.functions.doRevert(true);
@@ -58,7 +58,7 @@ describe('Errors', () => {
 
   it('catches requires', async function () {
     let res = await errors.functions.doRequire(false);
-    expect(res[0].toString()).toBe('3124445');
+    expect(res.toString()).toBe('3124445');
 
     try {
       res = await errors.functions.doRequire(true);
@@ -74,7 +74,7 @@ describe('Errors', () => {
 
   it('catches asserts', async function () {
     let res = await errors.functions.doAssert(false);
-    expect(res[0].toString()).toBe('3124445');
+    expect(res.toString()).toBe('3124445');
 
     try {
       res = await errors.functions.doAssert(true);

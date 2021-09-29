@@ -1,4 +1,4 @@
-## Solana Solidity JavaScript Client (Work In Progress)
+## Solana Solidity JavaScript Client
 
 JavaScript Client to use to deploy and interact with Solang-compiled Solidity contracts. The [Solang Compiler](https://github.com/hyperledger-labs/solang) can compile Solidity contracts to native Solana BPF contracts. Attempts to emulate [ethers.js](https://github.com/ethers-io/ethers.js) and [anchor.js](https://github.com/project-serum/anchor/tree/master/ts)
 

@@ -11,13 +11,13 @@ import {
 
 const PROGRAM_SO = fs.readFileSync(path.join(__dirname, '../build/bundle.so'));
 const CONTRACT_ABI = fs.readFileSync(
-  path.join(__dirname, '../build/Calc.abi'),
+  path.join(__dirname, '../build/Array.abi'),
   'utf-8'
 );
 
-describe('Calc', () => {
+describe('Array', () => {
   let program: Program;
-  let calc: Contract;
+  let contract: Contract;
   let wallet: string;
 
   before(async function () {
@@ -27,29 +27,28 @@ describe('Calc', () => {
     let payerAccount = await newAccountWithLamports(connection);
     program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
     wallet = pubKeyToHex(program.payerAccount.publicKey);
-  });
 
-  beforeEach(async function () {});
-
-  it('calc', async function () {
-    this.timeout(50000);
-
-    calc = await Contract.deploy(
+    contract = await Contract.deploy(
       program,
-      'Calc',
+      'Array',
       CONTRACT_ABI,
       [],
       [],
       8192 * 8
     );
+  });
 
-    let res = await calc.simulate.add(1, 2);
-    expect(res.toString()).toBe('3');
+  beforeEach(async function () {});
 
-    try {
-      await calc.simulate.div(1, 0);
-    } catch (e) {
-      expect(e.message).toBe('denominator should not be zero');
-    }
+  it('works without tx params', async function () {
+    let res = await contract.functions.sum([1, 2, 3]);
+    expect(res.toString()).toBe('6');
+  });
+
+  it('works with tx params', async function () {
+    let res = await contract.functions.sum([1, 2, 3], {
+      signers: [],
+    });
+    expect(res.toString()).toBe('6');
   });
 });
