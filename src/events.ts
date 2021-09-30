@@ -159,15 +159,17 @@ export class EventManager {
         return;
       }
       this._logsParser.parseLogs(logs.logs, (eventData, msg) => {
-        for (const [, callback, abi] of this._eventCallbacks.values()) {
-          let event;
-          try {
-            event = abi.parseLog(eventData);
-          } catch (e) {
-            console.log(e);
-          }
-          if (event) {
-            callback(...event.args);
+        if (eventData) {
+          for (const [, callback, abi] of this._eventCallbacks.values()) {
+            let event;
+            try {
+              event = abi.parseLog(eventData);
+            } catch (e) {
+              console.log(e);
+            }
+            if (event) {
+              callback(...event.args);
+            }
           }
         }
 
@@ -198,7 +200,6 @@ export class LogsParser {
     const logScanner = new LogScanner(logs);
     let log = logScanner.next();
     while (log !== null) {
-      console.log(log);
       const event = parseLogTopic(log);
       const msg = parseLogLog(log);
       if (event || msg) {
