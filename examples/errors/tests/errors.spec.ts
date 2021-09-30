@@ -18,7 +18,7 @@ describe('Events', () => {
       res = await contract.functions.doRevert(true);
     } catch (e) {
       expect(e.message).toBe('Do the revert thing');
-      expect(e.computeUnitsUsed).toBe(1023);
+      expect(e.computeUnitsUsed).toBe(1041);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
@@ -34,7 +34,7 @@ describe('Events', () => {
       res = await contract.functions.doRequire(true);
     } catch (e) {
       expect(e.message).toBe('Do the require thing');
-      expect(e.computeUnitsUsed).toBe(753);
+      expect(e.computeUnitsUsed).toBe(770);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
@@ -50,7 +50,7 @@ describe('Events', () => {
       res = await contract.functions.doAssert(true);
     } catch (e) {
       expect(e.message).toBe('return data or log not set');
-      expect(e.computeUnitsUsed).toBe(558);
+      expect(e.computeUnitsUsed).toBe(575);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }

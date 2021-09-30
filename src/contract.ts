@@ -35,6 +35,7 @@ export class Contract {
     const data = Buffer.concat([
       contractStorageAccount.publicKey.toBuffer(),
       program.payerAccount.publicKey.toBuffer(),
+      Buffer.from('0000000000000000', 'hex'),
       Buffer.from(hash.substr(2, 8), 'hex'),
       encodeSeeds(seeds),
       Buffer.from(input.replace('0x', ''), 'hex'),
@@ -140,6 +141,7 @@ export class Contract {
     const data = Buffer.concat([
       this.contractStorageAccount.publicKey.toBuffer(),
       (caller || this.program.payerAccount.publicKey).toBuffer(),
+      Buffer.from('0000000000000000', 'hex'),
       Buffer.from('00000000', 'hex'),
       encodeSeeds(seeds),
       Buffer.from(input.replace('0x', ''), 'hex'),

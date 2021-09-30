@@ -15,9 +15,10 @@ test-unit:
 	mocha -r ts-node/register tests/unit/*.spec.ts
 
 validator:
-	@docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
+	docker pull solanalabs/solana:edge
+	docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
 
 docker-build:
-	@docker run --rm -it -v ./:/sources hyperledgerlabs/solang -v -o examples/**/build --target solana examples/**/contracts/*.sol 
+	docker run --rm -it -v ./:/sources hyperledgerlabs/solang -v -o examples/**/build --target solana examples/**/contracts/*.sol 
 
 .PHONY: test-example test-all-examples test-unit validator docker-build
