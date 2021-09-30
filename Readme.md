@@ -59,13 +59,15 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   );
 
   // subscribe to events
-  token2.on('Approve', (owner: string, spender: string, value: string) => {
+  const listenerId = token2.addEventListener('Approve', (owner: string, spender: string, value: string) => {
     console.log({
       owner,
       spender,
       value: : ethers.utils.formatEther(value),
     });
   });
+
+  token2.removeEventListener(listenerId);
 })();
 ```
 

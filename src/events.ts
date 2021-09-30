@@ -1,9 +1,8 @@
 // Borrowed from https://github.com/project-serum/anchor/blob/master/ts/src/program/event.ts
 import { PublicKey, Connection } from '@solana/web3.js';
-import * as assert from 'assert';
 import { ethers } from 'ethers';
 
-import { parseLogTopic } from './logs';
+import { parseLogTopic, parseLogLog } from './logs';
 
 // Deserialized event data.
 export type EventData = {
@@ -14,6 +13,8 @@ export type EventData = {
 // Event callback.
 export type EventCallback = (...args: any) => void;
 
+// Log callback
+export type LogCallback = (msg: string) => void;
 export class EventManager {
   /**
    * Connection.
@@ -23,7 +24,7 @@ export class EventManager {
   /**
    * Event parser to handle onLogs callbacks.
    */
-  private _eventParser: EventParser;
+  private _logsParser: LogsParser;
 
   /**
    * Maps event listener id to [event-name, callback].
@@ -39,6 +40,11 @@ export class EventManager {
   private _eventListeners: Map<string, Array<number>>;
 
   /**
+   * Maps log listener id to callback.
+   */
+  private _logCallbacks: Map<number, LogCallback>;
+
+  /**
    * The next listener id to allocate.
    */
   private _listenerIdCount: number;
@@ -50,9 +56,10 @@ export class EventManager {
 
   constructor(connection: Connection) {
     this._connection = connection;
-    this._eventParser = new EventParser();
+    this._logsParser = new LogsParser();
     this._eventCallbacks = new Map();
     this._eventListeners = new Map();
+    this._logCallbacks = new Map();
     this._listenerIdCount = 0;
   }
 
@@ -83,25 +90,7 @@ export class EventManager {
       return listener;
     }
 
-    this._onLogsSubscriptionId = this._connection.onLogs('all', (logs, ctx) => {
-      if (logs.err) {
-        console.error(logs);
-        return;
-      }
-      this._eventParser.parseLogs(logs.logs, (eventData) => {
-        for (const [, callback, abi] of this._eventCallbacks.values()) {
-          let event;
-          try {
-            event = abi.parseLog(eventData);
-          } catch (e) {
-            console.log(e);
-          }
-          if (event) {
-            callback(...event.args);
-          }
-        }
-      });
-    });
+    this.processLogs();
 
     return listener;
   }
@@ -127,32 +116,96 @@ export class EventManager {
       this._eventListeners.delete(eventName);
     }
 
+    await this.stopProcessingLogs();
+  }
+
+  public addLogListener(callback: LogCallback): number {
+    let listener = this.getNewListenerId();
+
+    // Store the callback into the log listeners map.
+    this._logCallbacks.set(listener, callback);
+
+    // Create the subscription singleton, if needed.
+    if (this._onLogsSubscriptionId !== undefined) {
+      return listener;
+    }
+
+    this.processLogs();
+
+    return listener;
+  }
+
+  public async removeLogListener(listener: number): Promise<void> {
+    // Get the callback.
+    const callback = this._logCallbacks.get(listener);
+    if (!callback) {
+      throw new Error(`Log listener ${listener} doesn't exist!`);
+    }
+
+    this._logCallbacks.delete(listener);
+
+    await this.stopProcessingLogs();
+  }
+
+  private getNewListenerId() {
+    this._listenerIdCount += 1;
+    return this._listenerIdCount;
+  }
+
+  private processLogs() {
+    this._onLogsSubscriptionId = this._connection.onLogs('all', (logs, ctx) => {
+      if (logs.err) {
+        console.error(logs);
+        return;
+      }
+      this._logsParser.parseLogs(logs.logs, (eventData, msg) => {
+        for (const [, callback, abi] of this._eventCallbacks.values()) {
+          let event;
+          try {
+            event = abi.parseLog(eventData);
+          } catch (e) {
+            console.log(e);
+          }
+          if (event) {
+            callback(...event.args);
+          }
+        }
+
+        if (msg) {
+          for (const callback of this._logCallbacks.values()) {
+            callback(msg);
+          }
+        }
+      });
+    });
+  }
+
+  private async stopProcessingLogs() {
     // Kill the websocket connection if all listeners have been removed.
-    if (this._eventCallbacks.size == 0) {
-      assert.ok(this._eventListeners.size === 0);
+    if (this._eventCallbacks.size == 0 && this._logCallbacks.size == 0) {
       await this._connection.removeOnLogsListener(this._onLogsSubscriptionId);
       this._onLogsSubscriptionId = undefined;
     }
   }
 }
 
-export class EventParser {
+export class LogsParser {
   // Parse logs
-  public parseLogs(logs: string[], callback: (log: EventData) => void) {
+  public parseLogs(
+    logs: string[],
+    callback: (eventData: EventData | null, msg: string) => void
+  ) {
     const logScanner = new LogScanner(logs);
     let log = logScanner.next();
     while (log !== null) {
-      let event = this.handleLog(log);
-      if (event) {
-        callback(event);
+      console.log(log);
+      const event = parseLogTopic(log);
+      const msg = parseLogLog(log);
+      if (event || msg) {
+        callback(event, msg);
       }
       log = logScanner.next();
     }
-  }
-
-  // Handles logs from *this* program.
-  private handleLog(log: string): EventData | null {
-    return parseLogTopic(log);
   }
 }
 

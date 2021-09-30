@@ -92,7 +92,7 @@ function parseLogReturn(log: string) {
   return null;
 }
 
-function parseLogLog(log: string) {
+export function parseLogLog(log: string) {
   if (log.startsWith(LOG_LOG_PREFIX)) {
     return log.slice(LOG_LOG_PREFIX.length);
   }

@@ -1,44 +1,14 @@
 import expect from 'expect';
-import path from 'path';
-import fs from 'fs';
-import {
-  Contract,
-  Program,
-  newAccountWithLamports,
-  getConnection,
-  pubKeyToHex,
-} from '../../../src';
+import { Contract } from '../../../src';
+import { loadContract } from '../../utils';
 
-const PROGRAM_SO = fs.readFileSync(path.join(__dirname, '../build/bundle.so'));
-const CONTRACT_ABI = fs.readFileSync(
-  path.join(__dirname, '../build/Array.abi'),
-  'utf-8'
-);
-
-describe('Array', () => {
-  let program: Program;
+describe('TxParams', () => {
   let contract: Contract;
-  let wallet: string;
 
   before(async function () {
     this.timeout(150000);
-
-    let connection = getConnection();
-    let payerAccount = await newAccountWithLamports(connection);
-    program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
-    wallet = pubKeyToHex(program.payerAccount.publicKey);
-
-    contract = await Contract.deploy(
-      program,
-      'Array',
-      CONTRACT_ABI,
-      [],
-      [],
-      8192 * 8
-    );
+    ({ contract } = await loadContract(__dirname));
   });
-
-  beforeEach(async function () {});
 
   it('works without tx params', async function () {
     let res = await contract.functions.sum([1, 2, 3]);

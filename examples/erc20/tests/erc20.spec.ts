@@ -1,53 +1,28 @@
-import { ethers } from 'ethers';
 import expect from 'expect';
-import path from 'path';
-import fs from 'fs';
-import {
-  Contract,
-  Program,
-  newAccountWithLamports,
-  getConnection,
-  pubKeyToHex,
-} from '../../../src';
+import { ethers } from 'ethers';
 import { Keypair } from '@solana/web3.js';
+
+import { Contract, Program, pubKeyToHex } from '../../../src';
+import { loadContract } from '../../utils';
 
 const NAME = 'Solana';
 const SYMBOL = 'SOL';
 const TOTAL_SUPPLY = ethers.utils.parseEther('10000');
 
-const PROGRAM_SO = fs.readFileSync(path.join(__dirname, '../build/bundle.so'));
-const CONTRACT_ABI = fs.readFileSync(
-  path.join(__dirname, '../build/ERC20.abi'),
-  'utf-8'
-);
-
 describe('ERC20', () => {
   let program: Program;
   let token: Contract;
   let wallet: string;
-
-  before(async function () {
-    this.timeout(150000);
-
-    let connection = getConnection();
-    let payerAccount = await newAccountWithLamports(connection);
-    program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
-    wallet = pubKeyToHex(program.payerAccount.publicKey);
-  });
-
-  beforeEach(async function () {});
+  let contractAbi: string;
 
   it('deploys new contracts', async function () {
     this.timeout(150000);
-
-    token = await Contract.deploy(
+    ({
+      contract: token,
+      wallet,
+      contractAbi,
       program,
-      'ERC20',
-      CONTRACT_ABI,
-      [NAME, SYMBOL, TOTAL_SUPPLY],
-      [],
-      8192 * 8
-    );
+    } = await loadContract(__dirname, [NAME, SYMBOL, TOTAL_SUPPLY]));
 
     let res = await token.functions.name();
     expect(res.toString()).toEqual('Solana');
@@ -66,11 +41,7 @@ describe('ERC20', () => {
   });
 
   it('loads existing contracts', async function () {
-    token = await Contract.get(
-      program,
-      CONTRACT_ABI,
-      token.getStorageKeyPair()
-    );
+    token = await Contract.get(program, contractAbi, token.getStorageKeyPair());
 
     let res = await token.functions.name();
     expect(res.toString()).toEqual('Solana');
@@ -93,23 +64,14 @@ describe('ERC20', () => {
     const spenderAccount = pubKeyToHex(Keypair.generate().publicKey);
     const spendAmount = ethers.utils.parseEther('0.9');
 
-    token = await Contract.deploy(
-      program,
-      'ERC20',
-      CONTRACT_ABI,
-      [NAME, SYMBOL, TOTAL_SUPPLY],
-      [],
-      8192 * 8
-    );
-
     await new Promise((resolve) => {
-      let listenId = token.on(
+      let listenId = token.addEventListener(
         'Approval',
         async (owner: string, spender: string, value: ethers.BigNumber) => {
           expect(owner).toEqual(wallet);
           expect(spender).toEqual(spenderAccount);
           expect(value.eq(spendAmount)).toBeTruthy;
-          await token.off(listenId);
+          await token.removeEventListener(listenId);
           resolve(true);
         }
       );

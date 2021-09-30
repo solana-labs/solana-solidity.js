@@ -1,10 +1,11 @@
 o?=$(o)
+examples=$(shell find examples -type d -maxdepth 1 -mindepth 1)
 
 test-example:
 	solang examples/$(o)/contracts/*.sol -o examples/$(o)/build --target solana -v
 	mocha -r ts-node/register examples/$(o)/tests/*.spec.ts
 
-test-all-examples: examples/*
+test-all-examples: $(examples)
 	for example in $^; do\
 		solang $${example}/contracts/*.sol -o $${example}/build --target solana -v; \
 	done

@@ -40,8 +40,6 @@ export class Contract {
       Buffer.from(input.replace('0x', ''), 'hex'),
     ]);
 
-    // debug('calling constructor [' + constructorParams + ']');
-
     const instruction = new TransactionInstruction({
       keys: [
         {
@@ -147,8 +145,6 @@ export class Contract {
       Buffer.from(input.replace('0x', ''), 'hex'),
     ]);
 
-    // debug('calling function ' + name + ' [' + params + ']');
-
     const keys = [];
     seeds.forEach((seed) => {
       keys.push({ pubkey: seed.address, isSigner: false, isWritable: true });
@@ -235,6 +231,8 @@ export class Contract {
       const parsedTx =
         await this.program.connection.getParsedConfirmedTransaction(sig);
       const logs = parsedTx!.meta?.logMessages!;
+      // console.log(logs);
+
       const { encoded: _encoded } = parseTxLogs(logs);
       encoded = _encoded;
     }
@@ -272,14 +270,14 @@ export class Contract {
    * @param callback  The function to invoke whenever the event is emitted from
    *                  program logs.
    */
-  public on(eventName: string, callback: EventCallback): number {
+  public addEventListener(eventName: string, callback: EventCallback): number {
     return this.program.events.addEventListener(this.abi, eventName, callback);
   }
 
   /**
    * Unsubscribes from the given eventName.
    */
-  public async off(listener: number): Promise<void> {
+  public async removeEventListener(listener: number): Promise<void> {
     return await this.program.events.removeEventListener(listener);
   }
 }

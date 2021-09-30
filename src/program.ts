@@ -7,7 +7,7 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
-import { EventManager } from './events';
+import { EventManager, LogCallback } from './events';
 export class Program {
   public events: EventManager;
 
@@ -83,5 +83,24 @@ export class Program {
     );
 
     return account;
+  }
+
+  /**
+   * Invokes the given callback on every program log.
+   *
+   * @param callback  The function to invoke whenever the event is emitted from
+   *                  program logs.
+   */
+  public addLogListener(callback: LogCallback): number {
+    return this.events.addLogListener(callback);
+  }
+
+  /**
+   * Unsubscribes from the given log listener id.
+   *
+   * @param listenerId: The log listener id
+   */
+  public async removeLogListener(listenerId: number): Promise<void> {
+    return await this.events.removeLogListener(listenerId);
   }
 }

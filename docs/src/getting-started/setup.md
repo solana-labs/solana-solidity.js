@@ -55,14 +55,25 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
     ERC20_CONTRACT_ABI
   );
 
-  // subscribe to events
+  // subscribe to contract event topics
 
-  token2.on('Approve', (owner: string, spender: string, value: string) => {
+  const listenerId = token2.addEventListener('Approve', (owner: string, spender: string, value: string) => {
     console.log({
       owner,
       spender,
       value: : ethers.utils.formatEther(value),
     });
+
+    token2.removeEventListener(listenerId);
+  });
+
+
+  // subscribe to "Program log:"s
+
+  const logListenerId = program.addLogListener((msg: string) => {
+    console.log(msg);
+
+    program.removeEventListener(logListenerId);
   });
 })();
 ```

@@ -6,8 +6,6 @@ import {
   PublicKey,
 } from '@solana/web3.js';
 
-const DEFAULT_URL: string = 'http://localhost:8899';
-
 export function sleep(ms: number) {
   return new Promise(function (res) {
     setTimeout(res, ms);
@@ -54,11 +52,6 @@ export async function newAccountWithLamports(
     console.log('airdrop retry ' + retries);
   }
   throw new Error(`airdrop of ${lamports} failed`);
-}
-
-export function getConnection(rpcUrl?: string): Connection {
-  let url = rpcUrl || process.env.RPC_URL || DEFAULT_URL;
-  return new Connection(url, 'confirmed');
 }
 
 export async function loadProgram(
