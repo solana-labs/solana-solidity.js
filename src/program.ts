@@ -9,6 +9,7 @@ import {
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
 
+import { Contract, ContractDeployOptions } from './contract';
 import { LogsParser, LogCallback, EventCallback } from './logs';
 export class Program {
   private logs: LogsParser;
@@ -156,5 +157,46 @@ export class Program {
    */
   public async removeEventListener(listener: number): Promise<void> {
     return await this.logs.removeEventListener(listener);
+  }
+
+  /**
+   * Deploy a new contract to a loaded Solang program
+   *
+   * @param program
+   * @param contractName
+   * @param contractAbiData
+   * @param constructorParams
+   * @param seeds
+   * @param contractStorageSize
+   * @returns
+   */
+  async deployContract(
+    contractName: string,
+    contractAbiData: string,
+    constructorArgs: any[],
+    options?: ContractDeployOptions
+  ): Promise<Contract> {
+    return Contract.deploy(
+      this,
+      contractName,
+      contractAbiData,
+      constructorArgs,
+      options
+    );
+  }
+
+  /**
+   * Loaded a deployed contract
+   *
+   * @param program
+   * @param abiData
+   * @param contractStorageAccount
+   * @returns
+   */
+  async getContract(
+    abiData: string,
+    contractStorageAccount: Keypair
+  ): Promise<Contract> {
+    return Contract.get(this, abiData, contractStorageAccount);
   }
 }

@@ -40,8 +40,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   const program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
 
   // deploy new contract
-  const token = await Contract.deploy(
-    program,
+  const token = await program.deployContract(
     'ERC20',
     ERC20_CONTRACT_ABI,
     [NAME, SYMBOL, TOTAL_SUPPLY],
@@ -49,8 +48,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   console.log(await token.functions.symbol());
 
   // load existing contract
-  const token2 = await Contract.get(
-    program,
+  const token2 = await program.getContract(
     token.getStorageKeyPair(),
     ERC20_CONTRACT_ABI
   );

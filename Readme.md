@@ -26,7 +26,7 @@ This outputs `*.abi` and `bundle.so` files.
 4. Deploy and interact with the contract on Solana!
 
 ```typescript
-import { Contract, Program, newAccountWithLamports } from 'solana-solidity';
+import { Program, newAccountWithLamports } from 'solana-solidity';
 import CONTRACT_ABI from './ERC20.abi';
 import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
 
@@ -43,7 +43,7 @@ import PROGRAM_SO from './bundle.so'; // e.g. via webpack raw-loader
   const contractAbi = CONTRACT_ABI;
   const constructorArgs = [args...];
 
-  const token = await Contract.deploy(
+  const token = await program.deployContract(
     program,
     contractName,
     contractAbi,

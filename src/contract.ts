@@ -15,6 +15,23 @@ import { parseTxError, parseTxLogs } from './logs';
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 
+export type ContractDeployOptions = {
+  accounts?: PublicKey[];
+  writableAccounts?: PublicKey[];
+  seeds?: any[];
+  signers?: Keypair[];
+  caller?: PublicKey | undefined;
+  contractStorageSize?: number;
+};
+
+export type ContractTransactionOptions = {
+  accounts?: PublicKey[];
+  writableAccounts?: PublicKey[];
+  seeds?: any[];
+  signers?: Keypair[];
+  caller?: PublicKey | undefined;
+};
+
 export class Contract {
   /**
    * Deploy a new contract to a loaded Solang program
@@ -31,44 +48,78 @@ export class Contract {
     program: Program,
     contractName: string,
     contractAbiData: string,
-    constructorParams: any[],
-    seeds: any[] = [],
-    contractStorageSize: number = 2048
+    constructorArgs: any[],
+    options?: ContractDeployOptions
   ): Promise<Contract> {
+    const {
+      accounts = [],
+      writableAccounts = [],
+      seeds = [],
+      signers = [],
+      caller = undefined,
+      contractStorageSize = 2048,
+    } = options ?? {};
+
     const contractStorageAccount = await program.createStorageAccount(
       contractStorageSize
     );
     const abi = new ethers.utils.Interface(contractAbiData);
-    const input = abi.encodeDeploy(constructorParams);
+    const input = abi.encodeDeploy(constructorArgs);
 
     let hash = ethers.utils.keccak256(Buffer.from(contractName));
 
     const data = Buffer.concat([
       contractStorageAccount.publicKey.toBuffer(),
-      program.payerAccount.publicKey.toBuffer(),
+      (caller || program.payerAccount.publicKey).toBuffer(),
       Buffer.from('0000000000000000', 'hex'),
       Buffer.from(hash.substr(2, 8), 'hex'),
       encodeSeeds(seeds),
       Buffer.from(input.replace('0x', ''), 'hex'),
     ]);
 
+    const keys = [
+      // ...seeds.map((seed) => ({
+      //   pubkey: seed.address,
+      //   isSigner: false,
+      //   isWritable: true,
+      // })),
+      {
+        pubkey: contractStorageAccount.publicKey,
+        isSigner: false,
+        isWritable: true,
+      },
+      // {
+      //   pubkey: SYSVAR_CLOCK_PUBKEY,
+      //   isSigner: false,
+      //   isWritable: false,
+      // },
+      // {
+      //   pubkey: PublicKey.default,
+      //   isSigner: false,
+      //   isWritable: false,
+      // },
+      ...accounts.map((pubkey) => ({
+        pubkey,
+        isSigner: false,
+        isWritable: false,
+      })),
+      ...writableAccounts.map((pubkey) => ({
+        pubkey,
+        isSigner: false,
+        isWritable: true,
+      })),
+    ];
+
+    signers.unshift(program.payerAccount);
+
     const instruction = new TransactionInstruction({
-      keys: [
-        {
-          pubkey: contractStorageAccount.publicKey,
-          isSigner: false,
-          isWritable: true,
-        },
-      ],
+      keys,
       programId: program.programAccount.publicKey,
       data,
     });
 
-    const signers = [program.payerAccount];
-
-    let sig;
     try {
-      sig = await sendAndConfirmTransaction(
+      await sendAndConfirmTransaction(
         program.connection,
         new Transaction().add(instruction),
         signers,
@@ -151,25 +202,11 @@ export class Contract {
     return (...args: Array<any>) => {
       const last = args[args.length - 1];
       if (args.length > fragment.inputs.length && typeof last === 'object') {
-        const {
-          pubkeys,
-          seeds,
-          signers,
-          caller,
-        }: {
-          pubkeys: PublicKey[];
-          seeds: any[];
-          signers: Keypair[];
-          caller: PublicKey | undefined;
-        } = last;
         return this.call(
           simulate,
           fragment.name,
           args.slice(0, fragment.inputs.length),
-          pubkeys,
-          seeds,
-          signers,
-          caller
+          last
         );
       } else {
         return this.call(simulate, fragment.name, args);
@@ -182,7 +219,8 @@ export class Contract {
    * @param simulate
    * @param name
    * @param params
-   * @param pubkeys
+   * @param accounts
+   * @param writableAccounts
    * @param seeds
    * @param signers
    * @param caller
@@ -191,14 +229,19 @@ export class Contract {
   private async call(
     simulate: boolean,
     name: string,
-    params: any[],
-    pubkeys: PublicKey[] = [],
-    seeds: any[] = [],
-    signers: Keypair[] = [],
-    caller: PublicKey | undefined = undefined
+    args: any[],
+    options?: ContractTransactionOptions
   ): Promise<ethers.utils.Result> {
+    const {
+      accounts = [],
+      writableAccounts = [],
+      seeds = [],
+      signers = [],
+      caller,
+    } = options ?? {};
+
     const fragment = this.abi.getFunction(name);
-    const input = this.abi.encodeFunctionData(name, params);
+    const input = this.abi.encodeFunctionData(name, args);
 
     const data = Buffer.concat([
       this.contractStorageAccount.publicKey.toBuffer(),
@@ -209,32 +252,38 @@ export class Contract {
       Buffer.from(input.replace('0x', ''), 'hex'),
     ]);
 
-    const keys = [];
-    seeds.forEach((seed) => {
-      keys.push({ pubkey: seed.address, isSigner: false, isWritable: true });
-    });
-    keys.push({
-      pubkey: this.contractStorageAccount.publicKey,
-      isSigner: false,
-      isWritable: true,
-    });
-    keys.push({
-      pubkey: SYSVAR_CLOCK_PUBKEY,
-      isSigner: false,
-      isWritable: false,
-    });
-    keys.push({
-      pubkey: PublicKey.default,
-      isSigner: false,
-      isWritable: false,
-    });
-    for (let i = 0; i < pubkeys.length; i++) {
-      keys.push({
-        pubkey: pubkeys[i],
+    const keys = [
+      ...seeds.map((seed) => ({
+        pubkey: seed.address,
         isSigner: false,
-        isWritable: (i & 1) == 1,
-      });
-    }
+        isWritable: true,
+      })),
+      {
+        pubkey: this.contractStorageAccount.publicKey,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: SYSVAR_CLOCK_PUBKEY,
+        isSigner: false,
+        isWritable: false,
+      },
+      {
+        pubkey: PublicKey.default,
+        isSigner: false,
+        isWritable: false,
+      },
+      ...accounts.map((pubkey) => ({
+        pubkey,
+        isSigner: false,
+        isWritable: false,
+      })),
+      ...writableAccounts.map((pubkey) => ({
+        pubkey,
+        isSigner: false,
+        isWritable: true,
+      })),
+    ];
 
     const instruction = new TransactionInstruction({
       keys,

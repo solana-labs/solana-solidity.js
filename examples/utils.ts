@@ -25,13 +25,13 @@ export async function loadContract(
   const program = await Program.deploy(connection, payerAccount, programSo);
   const wallet = pubKeyToHex(program.payerAccount.publicKey);
 
-  const contract = await Contract.deploy(
-    program,
+  const contract = await program.deployContract(
     contractFile.split('.abi')[0],
     contractAbi,
     constructorArgs,
-    [],
-    8192 * 8
+    {
+      contractStorageSize: 8192 * 8,
+    }
   );
 
   return { connection, payerAccount, program, wallet, contract, contractAbi };

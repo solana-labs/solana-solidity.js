@@ -2,7 +2,7 @@ import expect from 'expect';
 import { Contract } from '../../../src';
 import { loadContract } from '../../utils';
 
-describe('Events', () => {
+describe('Errors', () => {
   let contract: Contract;
 
   before(async function () {

@@ -41,7 +41,7 @@ describe('ERC20', () => {
   });
 
   it('loads existing contracts', async function () {
-    token = await Contract.get(program, contractAbi, token.getStorageKeyPair());
+    token = await program.getContract(contractAbi, token.getStorageKeyPair());
 
     let res = await token.functions.name();
     expect(res.toString()).toEqual('Solana');
