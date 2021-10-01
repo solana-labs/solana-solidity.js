@@ -9,7 +9,7 @@ import {
 import { ethers } from 'ethers';
 
 import { EventCallback } from './logs';
-import { encodeSeeds } from './utils';
+import { encodeSeeds, paddedNumToHexString } from './utils';
 import { Program } from './program';
 import { parseTxError, parseTxLogs } from './logs';
 
@@ -22,6 +22,7 @@ export type ContractDeployOptions = {
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   contractStorageSize?: number;
+  value?: number;
 };
 
 export type ContractTransactionOptions = {
@@ -30,6 +31,7 @@ export type ContractTransactionOptions = {
   seeds?: any[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
+  value?: number;
 };
 
 export class Contract {
@@ -58,6 +60,7 @@ export class Contract {
       signers = [],
       caller = undefined,
       contractStorageSize = 2048,
+      value = 0,
     } = options ?? {};
 
     const contractStorageAccount = await program.createStorageAccount(
@@ -71,7 +74,7 @@ export class Contract {
     const data = Buffer.concat([
       contractStorageAccount.publicKey.toBuffer(),
       (caller || program.payerAccount.publicKey).toBuffer(),
-      Buffer.from('0000000000000000', 'hex'),
+      Buffer.from(paddedNumToHexString(value), 'hex'),
       Buffer.from(hash.substr(2, 8), 'hex'),
       encodeSeeds(seeds),
       Buffer.from(input.replace('0x', ''), 'hex'),
@@ -150,7 +153,7 @@ export class Contract {
   }
 
   /**
-   * Loaded a dpeloyed a contract
+   * Load a deployed contract
    *
    * @param program
    * @param abiData
@@ -238,6 +241,7 @@ export class Contract {
       seeds = [],
       signers = [],
       caller,
+      value = 0,
     } = options ?? {};
 
     const fragment = this.abi.getFunction(name);
@@ -246,7 +250,7 @@ export class Contract {
     const data = Buffer.concat([
       this.contractStorageAccount.publicKey.toBuffer(),
       (caller || this.program.payerAccount.publicKey).toBuffer(),
-      Buffer.from('0000000000000000', 'hex'),
+      Buffer.from(paddedNumToHexString(value), 'hex'),
       Buffer.from('00000000', 'hex'),
       encodeSeeds(seeds),
       Buffer.from(input.replace('0x', ''), 'hex'),

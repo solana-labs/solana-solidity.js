@@ -186,7 +186,7 @@ export class Program {
   }
 
   /**
-   * Loaded a deployed contract
+   * Load a deployed contract
    *
    * @param program
    * @param abiData
