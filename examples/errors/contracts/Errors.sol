@@ -1,4 +1,10 @@
 contract Errors {
+    constructor(bool yes) {
+        if (yes) {
+            revert('Do the revert thing');
+        }
+    }
+
     function doRevert(bool yes) public pure returns (int256) {
         if (yes) {
             revert('Do the revert thing');

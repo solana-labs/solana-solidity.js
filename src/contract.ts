@@ -53,16 +53,36 @@ export class Contract {
       data,
     });
 
-    await sendAndConfirmTransaction(
-      program.connection,
-      new Transaction().add(instruction),
-      [program.payerAccount],
-      {
-        skipPreflight: false,
-        commitment: 'confirmed',
-        preflightCommitment: undefined,
+    const signers = [program.payerAccount];
+
+    let sig;
+    try {
+      sig = await sendAndConfirmTransaction(
+        program.connection,
+        new Transaction().add(instruction),
+        signers,
+        {
+          skipPreflight: false,
+          commitment: 'confirmed',
+          preflightCommitment: undefined,
+        }
+      );
+    } catch {
+      const {
+        value: { err, logs },
+      } = await program.connection.simulateTransaction(
+        new Transaction().add(instruction),
+        signers
+      );
+      // console.log(logs);
+
+      if (!err) {
+        throw new Error('error is not falsy');
       }
-    );
+
+      const { log, encoded, computeUnitsUsed } = parseTxLogs(logs!);
+      throw parseTxError(encoded, computeUnitsUsed, log, logs);
+    }
 
     return new Contract(program, contractStorageAccount, contractAbiData);
   }

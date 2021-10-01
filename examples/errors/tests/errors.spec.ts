@@ -7,7 +7,7 @@ describe('Events', () => {
 
   before(async function () {
     this.timeout(150000);
-    ({ contract } = await loadContract(__dirname));
+    ({ contract } = await loadContract(__dirname, [false]));
   });
 
   it('catches reverts', async function () {
@@ -18,7 +18,7 @@ describe('Events', () => {
       res = await contract.functions.doRevert(true);
     } catch (e) {
       expect(e.message).toBe('Do the revert thing');
-      expect(e.computeUnitsUsed).toBe(1041);
+      expect(e.computeUnitsUsed).toBe(1046);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
@@ -34,7 +34,7 @@ describe('Events', () => {
       res = await contract.functions.doRequire(true);
     } catch (e) {
       expect(e.message).toBe('Do the require thing');
-      expect(e.computeUnitsUsed).toBe(770);
+      expect(e.computeUnitsUsed).toBe(775);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
@@ -50,7 +50,21 @@ describe('Events', () => {
       res = await contract.functions.doAssert(true);
     } catch (e) {
       expect(e.message).toBe('return data or log not set');
-      expect(e.computeUnitsUsed).toBe(575);
+      expect(e.computeUnitsUsed).toBe(580);
+      expect(e.logs.length).toBeGreaterThan(1);
+      return;
+    }
+
+    throw new Error('does not throw');
+  });
+
+  it('catches constructor errors', async function () {
+    this.timeout(150000);
+    try {
+      await loadContract(__dirname, [true]);
+    } catch (e) {
+      expect(e.message).toBe('Do the revert thing');
+      expect(e.computeUnitsUsed).toBe(824);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
