@@ -179,7 +179,7 @@ export class LogsParser {
       if (logs.err) {
         return;
       }
-      for (const log in logs.logs) {
+      for (const log of logs.logs) {
         const eventData = parseLogTopic(log);
         const msg = parseLogLog(log);
 
