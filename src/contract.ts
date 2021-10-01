@@ -8,7 +8,7 @@ import {
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
 
-import { EventCallback } from './events';
+import { EventCallback } from './logs';
 import { encodeSeeds } from './utils';
 import { Program } from './program';
 import { parseTxError, parseTxLogs } from './logs';
@@ -16,6 +16,17 @@ import { parseTxError, parseTxLogs } from './logs';
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 
 export class Contract {
+  /**
+   * Deploy a new contract to a loaded Solang program
+   *
+   * @param program
+   * @param contractName
+   * @param contractAbiData
+   * @param constructorParams
+   * @param seeds
+   * @param contractStorageSize
+   * @returns
+   */
   static async deploy(
     program: Program,
     contractName: string,
@@ -87,6 +98,14 @@ export class Contract {
     return new Contract(program, contractStorageAccount, contractAbiData);
   }
 
+  /**
+   * Loaded a dpeloyed a contract
+   *
+   * @param program
+   * @param abiData
+   * @param contractStorageAccount
+   * @returns
+   */
   static async get(
     program: Program,
     abiData: string,
@@ -99,6 +118,12 @@ export class Contract {
   readonly functions: { [name: string]: ContractFunction };
   readonly simulate: { [name: string]: ContractFunction };
 
+  /**
+   *
+   * @param program
+   * @param contractStorageAccount
+   * @param abiData
+   */
   constructor(
     public program: Program,
     public contractStorageAccount: Keypair,
@@ -113,6 +138,12 @@ export class Contract {
     });
   }
 
+  /**
+   *
+   * @param simulate
+   * @param fragment
+   * @returns
+   */
   buildCall(
     simulate: boolean,
     fragment: ethers.utils.Fragment
@@ -146,6 +177,17 @@ export class Contract {
     };
   }
 
+  /**
+   *
+   * @param simulate
+   * @param name
+   * @param params
+   * @param pubkeys
+   * @param seeds
+   * @param signers
+   * @param caller
+   * @returns
+   */
   private async call(
     simulate: boolean,
     name: string,
@@ -273,6 +315,12 @@ export class Contract {
     return null;
   }
 
+  /**
+   *
+   * @param test
+   * @param upto
+   * @returns
+   */
   async contractStorage(test: Program, upto: number): Promise<Buffer> {
     const accountInfo = await test.connection.getAccountInfo(
       this.contractStorageAccount.publicKey
@@ -281,6 +329,10 @@ export class Contract {
     return accountInfo!.data;
   }
 
+  /**
+   *
+   * @returns
+   */
   getStorageKeyPair(): Keypair {
     return this.contractStorageAccount;
   }
@@ -293,13 +345,13 @@ export class Contract {
    *                  program logs.
    */
   public addEventListener(eventName: string, callback: EventCallback): number {
-    return this.program.events.addEventListener(this.abi, eventName, callback);
+    return this.program.addEventListener(this.abi, eventName, callback);
   }
 
   /**
    * Unsubscribes from the given eventName.
    */
   public async removeEventListener(listener: number): Promise<void> {
-    return await this.program.events.removeEventListener(listener);
+    return await this.program.removeEventListener(listener);
   }
 }

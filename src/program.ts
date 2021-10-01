@@ -7,10 +7,20 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
-import { EventManager, LogCallback } from './events';
-export class Program {
-  public events: EventManager;
+import { ethers } from 'ethers';
 
+import { LogsParser, LogCallback, EventCallback } from './logs';
+export class Program {
+  private logs: LogsParser;
+
+  /**
+   * Load a new Solang-compiled program
+   *
+   * @param connection    Solana connection
+   * @param payerAccount  Payer pubkey
+   * @param so            Solang program build bundle
+   * @returns             The program
+   */
   static async deploy(
     connection: Connection,
     payerAccount: Keypair,
@@ -29,6 +39,16 @@ export class Program {
     return new Program(connection, payerAccount, programAccount);
   }
 
+  /**
+   *
+   * Load a deployed Solang-compiled program
+   *
+   * @param connection      Solana connection
+   * @param payerAccount    Payer pubkey
+   * @param programAccount  The program's pubkey
+   * @param so              Solang program build bundle
+   * @returns               The program
+   */
   static async get(
     connection: Connection,
     payerAccount: Keypair,
@@ -46,14 +66,26 @@ export class Program {
     return new Program(connection, payerAccount, programAccount);
   }
 
+  /**
+   *
+   * @param connection      Solana connection
+   * @param payerAccount    Payer pubkey
+   * @param programAccount  The program's pubkey
+   */
   constructor(
     public connection: Connection,
     public payerAccount: Keypair,
     public programAccount: Keypair
   ) {
-    this.events = new EventManager(this.connection);
+    this.logs = new LogsParser(this.connection);
   }
 
+  /**
+   * Create a storage account
+   *
+   * @param space
+   * @returns
+   */
   async createStorageAccount(space: number): Promise<Keypair> {
     const lamports = await this.connection.getMinimumBalanceForRentExemption(
       space
@@ -92,7 +124,7 @@ export class Program {
    *                  program logs.
    */
   public addLogListener(callback: LogCallback): number {
-    return this.events.addLogListener(callback);
+    return this.logs.addLogListener(callback);
   }
 
   /**
@@ -101,6 +133,28 @@ export class Program {
    * @param listenerId: The log listener id
    */
   public async removeLogListener(listenerId: number): Promise<void> {
-    return await this.events.removeLogListener(listenerId);
+    return await this.logs.removeLogListener(listenerId);
+  }
+
+  /**
+   * Invokes the given callback every time the given event is emitted.
+   *
+   * @param eventName The PascalCase name of the event, provided by the IDL.
+   * @param callback  The function to invoke whenever the event is emitted from
+   *                  program logs.
+   */
+  public addEventListener(
+    abi: ethers.utils.Interface,
+    eventName: string,
+    callback: EventCallback
+  ): number {
+    return this.logs.addEventListener(abi, eventName, callback);
+  }
+
+  /**
+   * Unsubscribes from the given eventName.
+   */
+  public async removeEventListener(listener: number): Promise<void> {
+    return await this.logs.removeEventListener(listener);
   }
 }
