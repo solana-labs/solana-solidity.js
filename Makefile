@@ -2,11 +2,15 @@ o?=$(o)
 examples=$(shell find examples -type d -maxdepth 1 -mindepth 1)
 
 test-example:
+	rm -rf examples/$(o)/build
+	mkdir -p examples/$(o)/build
 	solang examples/$(o)/contracts/*.sol -o examples/$(o)/build --target solana -v
 	mocha -r ts-node/register examples/$(o)/tests/*.spec.ts
 
 test-all-examples: $(examples)
 	for example in $^; do\
+		rm -rf $${example}/build; \
+		mkdir -p $${example}/build; \
 		solang $${example}/contracts/*.sol -o $${example}/build --target solana -v; \
 	done
 	mocha -r ts-node/register examples/**/tests/*.spec.ts

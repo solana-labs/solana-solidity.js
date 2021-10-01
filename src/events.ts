@@ -13,8 +13,9 @@ export type EventData = {
 // Event callback.
 export type EventCallback = (...args: any) => void;
 
-// Log callback
+// Log callback.
 export type LogCallback = (msg: string) => void;
+
 export class EventManager {
   /**
    * Connection.
