@@ -48,7 +48,7 @@ module.exports = {
       {
         collapsable: false,
         title: 'Examples',
-        children: ['/examples/erc20'],
+        children: ['/examples/introduction', '/examples/erc20'],
       },
     ],
 

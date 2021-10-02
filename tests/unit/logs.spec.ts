@@ -54,7 +54,7 @@ describe('Logs', () => {
     expect(log).toEqual('denominator should not be zero');
   });
 
-  it('parses "Program data:" logs aka event topics', async function () {
+  it('parses "Program data:" logs', async function () {
     const { data, topics } = parseLogTopic(
       'Program data: PUBqMYpHInIBMuX3TXZKuYGHwf1juv3K+2eNQrEUqo4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeibA== QUJDRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEyv4BIwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
     );

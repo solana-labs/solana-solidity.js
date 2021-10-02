@@ -1,6 +1,6 @@
 # ERC20
 
-This example assumes all [prerequisites](../getting-started/installation.md) are installed.
+This example assumes all [prerequisites](../getting-started/setup.md) are installed.
 
 1. Clone the repo.
 
@@ -8,20 +8,14 @@ This example assumes all [prerequisites](../getting-started/installation.md) are
 git clone https://github.com/solana-labs/solana-solidity.js
 ```
 
-2. Compile the contract.
+2. Start the [Solana test validator](https://docs.solana.com/developing/test-validator).
 
 ```bash
-solang examples/erc20/contracts/ERC20.sol -o examples/erc20/build --target solana -v
-```
-
-3. Start the [Solana test validator](https://docs.solana.com/developing/test-validator).
-
-```bash
-solana-test-validator
+make validator
 ```
 
 4. Run the test
 
 ```
-mocha -r ts-node/register examples/erc20/tests/erc20.spec.ts
+make test-example o=erc20
 ```

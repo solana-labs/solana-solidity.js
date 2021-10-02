@@ -4,9 +4,8 @@
 
 Features:
 
-- Upload a BPF program
-- Interact with an existing on-chain program
-- Call a constructor of a solidity contract
+- Deploy a solidity contract
+- Load existing contracts
 - Call a function of a solidity contract
-- Properly decode errors
-- Subscribe to events
+- Catch deployment and function call errors
+- Subscribe to events and logs
