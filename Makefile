@@ -1,11 +1,11 @@
 o?=$(o)
-examples=$(shell find examples -type d -maxdepth 1 -mindepth 1)
+examples=$(shell find examples -maxdepth 1 -mindepth 1 -type d)
 
 test-example:
 	rm -rf examples/$(o)/build
 	mkdir -p examples/$(o)/build
 	docker run --rm -it -v $(PWD)/examples/$(o):/example --entrypoint /bin/bash hyperledgerlabs/solang -c "solang /example/contracts/*.sol -o /example/build --target solana -v"
-	mocha -r ts-node/register examples/$(o)/tests/*.spec.ts
+	./node_modules/.bin/mocha -r ts-node/register examples/$(o)/tests/*.spec.ts
 
 test-all-examples: $(examples)
 	for example in $^; do\
@@ -13,10 +13,10 @@ test-all-examples: $(examples)
 		mkdir -p $${example}/build; \
 		docker run --rm -it -v $(PWD)/$${example}:/example --entrypoint /bin/bash hyperledgerlabs/solang -c "solang /example/contracts/*.sol -o /example/build --target solana -v"; \
 	done
-	mocha -r ts-node/register examples/**/tests/*.spec.ts
+	./node_modules/.bin/mocha -r ts-node/register examples/**/tests/*.spec.ts
 
 test-unit:
-	mocha -r ts-node/register tests/unit/*.spec.ts
+	./node_modules/.bin/mocha -r ts-node/register tests/unit/*.spec.ts
 
 validator:
 	docker pull solanalabs/solana:edge
