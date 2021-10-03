@@ -9,6 +9,12 @@ const LOG_DATA_PREFIX = 'Program data: ';
 export class TxError extends Error {
   public logs: string[];
   public computeUnitsUsed: number;
+
+  constructor(msg: string) {
+    super(msg);
+    this.logs = [];
+    this.computeUnitsUsed = 0;
+  }
 }
 
 // Deserialized event data.
@@ -88,7 +94,7 @@ export class LogsParser {
     }
     this._eventListeners.set(
       eventHash,
-      this._eventListeners.get(eventHash).concat(listener)
+      (this._eventListeners.get(eventHash) ?? []).concat(listener)
     );
 
     // Store the callback into the listener map.
@@ -211,7 +217,11 @@ export class LogsParser {
    */
   private async stopProcessingLogs() {
     // Kill the websocket connection if all listeners have been removed.
-    if (this._eventCallbacks.size == 0 && this._logCallbacks.size == 0) {
+    if (
+      this._eventCallbacks.size == 0 &&
+      this._logCallbacks.size == 0 &&
+      this._onLogsSubscriptionId
+    ) {
       await this._connection.removeOnLogsListener(this._onLogsSubscriptionId);
       this._onLogsSubscriptionId = undefined;
     }
@@ -225,9 +235,9 @@ export class LogsParser {
  * @returns
  */
 export function parseTxLogs(logs: string[]) {
-  let encoded = null;
+  let encoded: Buffer | null = null;
   let computeUnitsUsed = 0;
-  let log = null;
+  let log: string | null = null;
 
   for (const message of logs) {
     // return

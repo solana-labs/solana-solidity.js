@@ -146,7 +146,7 @@ export class Contract {
       }
 
       const { log, encoded, computeUnitsUsed } = parseTxLogs(logs!);
-      throw parseTxError(encoded, computeUnitsUsed, log, logs);
+      throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
     }
 
     return new Contract(program, contractStorageAccount, contractAbiData);
@@ -234,7 +234,7 @@ export class Contract {
     name: string,
     args: any[],
     options?: ContractTransactionOptions
-  ): Promise<ethers.utils.Result> {
+  ): Promise<ethers.utils.Result | null> {
     const {
       accounts = [],
       writableAccounts = [],
@@ -312,7 +312,7 @@ export class Contract {
       encoded = _encoded;
 
       if (err) {
-        throw parseTxError(encoded, computeUnitsUsed, log, logs);
+        throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
       }
     } else {
       let sig;
@@ -342,7 +342,7 @@ export class Contract {
 
         const { log, encoded: _encoded, computeUnitsUsed } = parseTxLogs(logs!);
         encoded = _encoded;
-        throw parseTxError(encoded, computeUnitsUsed, log, logs);
+        throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
       }
 
       const parsedTx =
