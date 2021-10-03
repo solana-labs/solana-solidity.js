@@ -1,4 +1,3 @@
-o?=$(o)
 examples=$(shell find examples -maxdepth 1 -mindepth 1 -type d)
 
 test-example:
