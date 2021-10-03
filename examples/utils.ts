@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { Connection } from '@solana/web3.js';
 
-import { Contract, Program, newAccountWithLamports, pubKeyToHex } from '../src';
+import { Program, newAccountWithLamports, pubKeyToHex } from '../src';
 
 const DEFAULT_URL: string = 'http://localhost:8899';
 
@@ -23,7 +23,7 @@ export async function loadContract(
   const connection = getConnection();
   const payerAccount = await newAccountWithLamports(connection);
   const program = await Program.deploy(connection, payerAccount, programSo);
-  const wallet = pubKeyToHex(program.payerAccount.publicKey);
+  const payerETHAddress = pubKeyToHex(payerAccount.publicKey);
 
   const contract = await program.deployContract(
     contractFile.split('.abi')[0],
@@ -34,7 +34,14 @@ export async function loadContract(
     }
   );
 
-  return { connection, payerAccount, program, wallet, contract, contractAbi };
+  return {
+    connection,
+    payerAccount,
+    program,
+    payerETHAddress,
+    contract,
+    contractAbi,
+  };
 }
 
 export function getConnection(rpcUrl?: string): Connection {

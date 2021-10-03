@@ -12,14 +12,14 @@ const TOTAL_SUPPLY = ethers.utils.parseEther('10000');
 describe('ERC20', () => {
   let program: Program;
   let token: Contract;
-  let wallet: string;
+  let payerETHAddress: string;
   let contractAbi: string;
 
   it('deploys new contract', async function () {
     this.timeout(150000);
     ({
       contract: token,
-      wallet,
+      payerETHAddress,
       contractAbi,
       program,
     } = await loadContract(__dirname, [NAME, SYMBOL, TOTAL_SUPPLY]));
@@ -36,7 +36,7 @@ describe('ERC20', () => {
     res = await token.functions.totalSupply();
     expect(res).toEqual(TOTAL_SUPPLY);
 
-    res = await token.functions.balanceOf(wallet);
+    res = await token.functions.balanceOf(payerETHAddress);
     expect(res).toEqual(TOTAL_SUPPLY);
   });
 
@@ -56,7 +56,7 @@ describe('ERC20', () => {
     let res = await token.functions.balanceOf(otherAccount);
     expect(res).toEqual(transferAmount);
 
-    res = await token.functions.balanceOf(wallet);
+    res = await token.functions.balanceOf(payerETHAddress);
     expect(res).toEqual(TOTAL_SUPPLY.sub(transferAmount));
   });
 
@@ -68,7 +68,7 @@ describe('ERC20', () => {
       let listenId = token.addEventListener(
         'Approval',
         async (owner: string, spender: string, value: ethers.BigNumber) => {
-          expect(owner).toEqual(wallet);
+          expect(owner).toEqual(payerETHAddress);
           expect(spender).toEqual(spenderAccount);
           expect(value.eq(spendAmount)).toBeTruthy;
           await token.removeEventListener(listenId);
