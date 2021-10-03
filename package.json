@@ -5,7 +5,8 @@
   "main": "dist/esm/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
-    "prepublish": "tsc --resolveJsonModule"
+    "lint": "rm -rf dist && tsc",
+    "prepublish": "rm -rf dist && tsc --project tsconfig.release.json"
   },
   "license": "MIT",
   "devDependencies": {
