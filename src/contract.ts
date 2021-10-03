@@ -9,7 +9,7 @@ import {
 import { ethers } from 'ethers';
 
 import { EventCallback } from './logs';
-import { encodeSeeds, paddedNumToHexString } from './utils';
+import { encodeSeeds, numToPaddedHex } from './utils';
 import { Program } from './program';
 import { parseTxError, parseTxLogs } from './logs';
 
@@ -74,7 +74,7 @@ export class Contract {
     const data = Buffer.concat([
       contractStorageAccount.publicKey.toBuffer(),
       (caller || program.payerAccount.publicKey).toBuffer(),
-      Buffer.from(paddedNumToHexString(value), 'hex'),
+      Buffer.from(numToPaddedHex(value), 'hex'),
       Buffer.from(hash.substr(2, 8), 'hex'),
       encodeSeeds(seeds),
       Buffer.from(input.replace('0x', ''), 'hex'),
@@ -250,7 +250,7 @@ export class Contract {
     const data = Buffer.concat([
       this.contractStorageAccount.publicKey.toBuffer(),
       (caller || this.program.payerAccount.publicKey).toBuffer(),
-      Buffer.from(paddedNumToHexString(value), 'hex'),
+      Buffer.from(numToPaddedHex(value), 'hex'),
       Buffer.from('00000000', 'hex'),
       encodeSeeds(seeds),
       Buffer.from(input.replace('0x', ''), 'hex'),

@@ -15,7 +15,7 @@ describe('ERC20', () => {
   let wallet: string;
   let contractAbi: string;
 
-  it('deploys new contracts', async function () {
+  it('deploys new contract', async function () {
     this.timeout(150000);
     ({
       contract: token,
@@ -40,7 +40,7 @@ describe('ERC20', () => {
     expect(res).toEqual(TOTAL_SUPPLY);
   });
 
-  it('loads existing contracts', async function () {
+  it('loads existing contract', async function () {
     token = await program.getContract(contractAbi, token.getStorageKeyPair());
 
     let res = await token.functions.name();
@@ -75,7 +75,6 @@ describe('ERC20', () => {
           resolve(true);
         }
       );
-
       token.functions.approve(spenderAccount, spendAmount);
     });
   });

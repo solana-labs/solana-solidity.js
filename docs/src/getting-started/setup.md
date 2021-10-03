@@ -1,6 +1,6 @@
 # Setup
 
-This is a short guide into deploying and interacting with the standard [ERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol) Solidity contract:
+This is a short guide into deploying and interacting with the standard [ERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol) Solidity contract on Solana:
 
 1. Install [docker](https://www.docker.com/).
 2. Pull the required images:
@@ -38,7 +38,7 @@ This outputs `*.abi` and `bundle.so` files in a `build` folder.
 npm install solana-solidity
 ```
 
-7. Paste the following in an `example.js` file:
+7. Paste the following in a `example.js` file:
 
 ```js
 const { Connection } = require('@solana/web3.js');

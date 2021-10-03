@@ -15,7 +15,7 @@ export class Program {
   private logs: LogsParser;
 
   /**
-   * Load a new Solang-compiled program
+   * Load a new Solang program
    *
    * @param connection    Solana connection
    * @param payerAccount  Payer pubkey
@@ -42,7 +42,7 @@ export class Program {
 
   /**
    *
-   * Load a deployed Solang-compiled program
+   * Load a deployed Solang program
    *
    * @param connection      Solana connection
    * @param payerAccount    Payer pubkey
@@ -87,7 +87,7 @@ export class Program {
    * @param space
    * @returns
    */
-  async createStorageAccount(space: number): Promise<Keypair> {
+  public async createStorageAccount(space: number): Promise<Keypair> {
     const lamports = await this.connection.getMinimumBalanceForRentExemption(
       space
     );
@@ -121,8 +121,7 @@ export class Program {
   /**
    * Invokes the given callback on every program log.
    *
-   * @param callback  The function to invoke whenever the event is emitted from
-   *                  program logs.
+   * @param callback  The function to invoke whenever a `Program log:` is parsed in the logs.
    */
   public addLogListener(callback: LogCallback): number {
     return this.logs.addLogListener(callback);
@@ -131,7 +130,7 @@ export class Program {
   /**
    * Unsubscribes from the given log listener id.
    *
-   * @param listenerId: The log listener id
+   * @param listenerId The log listener id
    */
   public async removeLogListener(listenerId: number): Promise<void> {
     return await this.logs.removeLogListener(listenerId);
@@ -154,13 +153,15 @@ export class Program {
 
   /**
    * Unsubscribes from the given eventName.
+   *
+   * @param listenerId The log listener id
    */
-  public async removeEventListener(listener: number): Promise<void> {
-    return await this.logs.removeEventListener(listener);
+  public async removeEventListener(listenerId: number): Promise<void> {
+    return await this.logs.removeEventListener(listenerId);
   }
 
   /**
-   * Deploy a new contract to a loaded Solang program
+   * Deploy a new contract in a loaded Solang program
    *
    * @param program
    * @param contractName
@@ -170,7 +171,7 @@ export class Program {
    * @param contractStorageSize
    * @returns
    */
-  async deployContract(
+  public async deployContract(
     contractName: string,
     contractAbiData: string,
     constructorArgs: any[],
@@ -191,9 +192,9 @@ export class Program {
    * @param program
    * @param abiData
    * @param contractStorageAccount
-   * @returns
+   * @returns                      The contract instance
    */
-  async getContract(
+  public async getContract(
     abiData: string,
     contractStorageAccount: Keypair
   ): Promise<Contract> {

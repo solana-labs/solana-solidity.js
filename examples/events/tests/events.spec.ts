@@ -18,10 +18,7 @@ describe('Events', () => {
         expect(args[2]).toEqual('foobar');
 
         await contract.removeEventListener(listenId);
-
         resolve(true);
-
-        contract.functions.second();
       });
       contract.functions.first();
     });
@@ -33,7 +30,6 @@ describe('Events', () => {
         expect(args[2]).toEqual('0xcafe0123');
 
         await contract.removeEventListener(listenId);
-
         resolve(true);
       });
       contract.functions.second();
