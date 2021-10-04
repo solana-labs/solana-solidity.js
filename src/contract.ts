@@ -23,6 +23,7 @@ export type ContractDeployOptions = {
   caller?: PublicKey | undefined;
   contractStorageSize?: number;
   value?: number;
+  simulate?: boolean;
 };
 
 export type ContractTransactionOptions = {
@@ -32,6 +33,7 @@ export type ContractTransactionOptions = {
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   value?: number;
+  simulate?: boolean;
 };
 
 export class Contract {
@@ -61,6 +63,7 @@ export class Contract {
       caller = undefined,
       contractStorageSize = 2048,
       value = 0,
+      simulate = false,
     } = options ?? {};
 
     const contractStorageAccount = await program.createStorageAccount(
@@ -121,18 +124,7 @@ export class Contract {
       data,
     });
 
-    try {
-      await sendAndConfirmTransaction(
-        program.connection,
-        new Transaction().add(instruction),
-        signers,
-        {
-          skipPreflight: false,
-          commitment: 'confirmed',
-          preflightCommitment: undefined,
-        }
-      );
-    } catch {
+    if (simulate) {
       const {
         value: { err, logs },
       } = await program.connection.simulateTransaction(
@@ -140,13 +132,39 @@ export class Contract {
         signers
       );
       // console.log(logs);
+      const { encoded, computeUnitsUsed, log } = parseTxLogs(logs!);
 
-      if (!err) {
-        throw new Error('error is not falsy');
+      if (err) {
+        throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
       }
+    } else {
+      try {
+        await sendAndConfirmTransaction(
+          program.connection,
+          new Transaction().add(instruction),
+          signers,
+          {
+            skipPreflight: false,
+            commitment: 'confirmed',
+            preflightCommitment: undefined,
+          }
+        );
+      } catch {
+        const {
+          value: { err, logs },
+        } = await program.connection.simulateTransaction(
+          new Transaction().add(instruction),
+          signers
+        );
+        // console.log(logs);
 
-      const { log, encoded, computeUnitsUsed } = parseTxLogs(logs!);
-      throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
+        if (!err) {
+          throw new Error('error is not falsy');
+        }
+
+        const { log, encoded, computeUnitsUsed } = parseTxLogs(logs!);
+        throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
+      }
     }
 
     return new Contract(program, contractStorageAccount, contractAbiData);
@@ -170,7 +188,6 @@ export class Contract {
 
   public abi: ethers.utils.Interface;
   readonly functions: { [name: string]: ContractFunction };
-  readonly simulate: { [name: string]: ContractFunction };
 
   /**
    *
@@ -185,41 +202,33 @@ export class Contract {
   ) {
     this.abi = new ethers.utils.Interface(abiData);
     this.functions = {};
-    this.simulate = {};
     Object.entries(this.abi.functions).forEach(([, frag]) => {
-      this.functions[frag.name] = this.buildCall(false, frag);
-      this.simulate[frag.name] = this.buildCall(true, frag);
+      this.functions[frag.name] = this.buildCall(frag);
     });
   }
 
   /**
    *
-   * @param simulate
    * @param fragment
    * @returns
    */
-  buildCall(
-    simulate: boolean,
-    fragment: ethers.utils.Fragment
-  ): ContractFunction {
+  buildCall(fragment: ethers.utils.Fragment): ContractFunction {
     return (...args: Array<any>) => {
       const last = args[args.length - 1];
       if (args.length > fragment.inputs.length && typeof last === 'object') {
         return this.call(
-          simulate,
           fragment.name,
           args.slice(0, fragment.inputs.length),
           last
         );
       } else {
-        return this.call(simulate, fragment.name, args);
+        return this.call(fragment.name, args);
       }
     };
   }
 
   /**
    *
-   * @param simulate
    * @param name
    * @param params
    * @param accounts
@@ -230,7 +239,6 @@ export class Contract {
    * @returns
    */
   private async call(
-    simulate: boolean,
     name: string,
     args: any[],
     options?: ContractTransactionOptions
@@ -242,6 +250,7 @@ export class Contract {
       signers = [],
       caller,
       value = 0,
+      simulate = false,
     } = options ?? {};
 
     const fragment = this.abi.getFunction(name);

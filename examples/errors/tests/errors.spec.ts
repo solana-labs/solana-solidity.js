@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { Contract } from '../../../src';
+import { Contract, TxError } from '../../../src';
 import { loadContract } from '../../utils';
 
 describe('Errors', () => {
@@ -16,7 +16,8 @@ describe('Errors', () => {
 
     try {
       res = await contract.functions.doRevert(true);
-    } catch (e) {
+    } catch (_e) {
+      const e = _e as TxError;
       expect(e.message).toBe('Do the revert thing');
       expect(e.computeUnitsUsed).toBe(1046);
       expect(e.logs.length).toBeGreaterThan(1);
@@ -32,7 +33,8 @@ describe('Errors', () => {
 
     try {
       res = await contract.functions.doRequire(true);
-    } catch (e) {
+    } catch (_e) {
+      const e = _e as TxError;
       expect(e.message).toBe('Do the require thing');
       expect(e.computeUnitsUsed).toBe(775);
       expect(e.logs.length).toBeGreaterThan(1);
@@ -48,7 +50,8 @@ describe('Errors', () => {
 
     try {
       res = await contract.functions.doAssert(true);
-    } catch (e) {
+    } catch (_e) {
+      const e = _e as TxError;
       expect(e.message).toBe('return data or log not set');
       expect(e.computeUnitsUsed).toBe(580);
       expect(e.logs.length).toBeGreaterThan(1);
@@ -62,7 +65,8 @@ describe('Errors', () => {
     this.timeout(150000);
     try {
       await loadContract(__dirname, [true]);
-    } catch (e) {
+    } catch (_e) {
+      const e = _e as TxError;
       expect(e.message).toBe('Do the revert thing');
       expect(e.computeUnitsUsed).toBe(824);
       expect(e.logs.length).toBeGreaterThan(1);

@@ -59,13 +59,16 @@ main().then(
 );
 
 async function main() {
+  console.log('connecting to the local solana node');
   const connection = new Connection('http://localhost:8899', 'confirmed');
   const payerAccount = await newAccountWithLamports(connection);
 
   // load program
+  console.log('deploying the solang program');
   const program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
 
   // deploy new contract
+  console.log('deploying the erc20 contract to the program');
   const contractName = 'ERC20';
   const contractAbi = CONTRACT_ABI;
   const constructorArgs = ['Solana', 'SOL', 10000];
@@ -79,7 +82,10 @@ async function main() {
   );
 
   // call a function
-  console.log(await token.functions.symbol());
+  console.log('invoking a contract call');
+  console.log('result: %s', await token.functions.symbol());
+
+  console.log('success!');
 }
 ```
 
