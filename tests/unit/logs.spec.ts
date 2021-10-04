@@ -23,7 +23,7 @@ describe('Logs', () => {
       },
     ]);
     const fragment = abi.getFunction('name');
-    const args = abi.decodeFunctionResult(fragment, encoded);
+    const args = abi.decodeFunctionResult(fragment, encoded!);
     expect(args[0]).toEqual('Solana');
   });
 
@@ -57,7 +57,7 @@ describe('Logs', () => {
   it('parses "Program data:" logs', async function () {
     const { data, topics } = parseLogTopic(
       'Program data: PUBqMYpHInIBMuX3TXZKuYGHwf1juv3K+2eNQrEUqo4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeibA== QUJDRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEyv4BIwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
-    );
+    )!;
 
     const abi = new ethers.utils.Interface([
       {
