@@ -12,7 +12,7 @@ describe('Native Solana', () => {
   });
 
   it('can be transfered', async function () {
-    let ethBalance, solBalance;
+    let bankBalance, solBalance;
 
     const depositAmount = 10;
     const withdrawAmount = 5;
@@ -22,20 +22,20 @@ describe('Native Solana', () => {
     );
     expect(solBalance).toBeGreaterThan(depositAmount);
 
-    // ethBalance = await contract.functions.deposit({
+    // bankBalance = await contract.functions.deposit({
     //   value: depositAmount,
     // });
     // solBalance = await program.connection.getBalance(
     //   program.programAccount.publicKey
     // );
-    // expect(ethBalance.toString()).toBeCloseTo(depositAmount);
-    // expect(solBalance.sub(ethBalance).toString()).toBeCloseTo(ethBalance);
+    // expect(bankBalance.toString()).toBeCloseTo(depositAmount);
+    // expect(solBalance.sub(bankBalance).toString()).toBeCloseTo(bankBalance);
 
-    // ethBalance = await contract.functions.withdraw(withdrawAmount);
+    // bankBalance = await contract.functions.withdraw(withdrawAmount);
     // solBalance = await program.connection.getBalance(
     //   program.programAccount.publicKey
     // );
-    // expect(ethBalance.toString()).toBeCloseTo(withdrawAmount);
-    // expect(solBalance.sub(ethBalance).toString()).toBeCloseTo(ethBalance);
+    // expect(bankBalance.toString()).toBeCloseTo(withdrawAmount);
+    // expect(solBalance.sub(bankBalance).toString()).toBeCloseTo(bankBalance);
   });
 });
