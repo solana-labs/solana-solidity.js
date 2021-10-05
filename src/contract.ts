@@ -2,8 +2,6 @@ import {
   Keypair,
   PublicKey,
   TransactionInstruction,
-  Transaction,
-  sendAndConfirmTransaction,
   SYSVAR_CLOCK_PUBKEY,
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
@@ -15,12 +13,15 @@ import { Program } from './program';
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 
 export type ContractDeployOptions = {
+  name: string;
+  abi: string;
+  space: number;
+  constructorArgs?: any[];
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
   seeds?: any[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
-  contractStorageSize?: number;
   value?: number;
   simulate?: boolean;
 };
@@ -52,34 +53,28 @@ export class Contract {
    * Deploy a new contract to a loaded Solang program
    *
    * @param program
-   * @param contractName
-   * @param contractAbiData
-   * @param constructorParams
-   * @param seeds
-   * @param contractStorageSize
+   * @param options
    * @returns
    */
   static async deploy(
     program: Program,
-    contractName: string,
-    contractAbiData: string,
-    constructorArgs: any[],
-    options?: ContractDeployOptions
+    options: ContractDeployOptions
   ): Promise<ContractDeployResult> {
     const {
+      name: contractName,
+      abi: contractAbiData,
+      space,
+      constructorArgs,
       accounts = [],
       writableAccounts = [],
       seeds = [],
       signers = [],
       caller = undefined,
-      contractStorageSize = 2048,
       value = 0,
       simulate = false,
     } = options ?? {};
 
-    const contractStorageAccount = await program.createStorageAccount(
-      contractStorageSize
-    );
+    const contractStorageAccount = await program.createStorageAccount(space);
     const abi = new ethers.utils.Interface(contractAbiData);
     const input = abi.encodeDeploy(constructorArgs);
 

@@ -72,14 +72,12 @@ async function main() {
   const contractName = 'ERC20';
   const contractAbi = CONTRACT_ABI;
   const constructorArgs = ['Solana', 'SOL', 10000];
-  const { contract: token } = await program.deployContract(
-    contractName,
-    contractAbi,
+  const { contract: token } = await program.deployContract({
+    name,
+    abi,
+    space: 8192 * 8,
     constructorArgs,
-    {
-      contractStorageSize: 8192 * 8,
-    }
-  );
+  });
 
   // call a function
   console.log('invoking a contract call');

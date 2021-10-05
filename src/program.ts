@@ -173,26 +173,13 @@ export class Program {
    * Deploy a new contract in a loaded Solang program
    *
    * @param program
-   * @param contractName
-   * @param contractAbiData
-   * @param constructorParams
-   * @param seeds
-   * @param contractStorageSize
+   * @param options
    * @returns
    */
   public async deployContract(
-    contractName: string,
-    contractAbiData: string,
-    constructorArgs: any[],
-    options?: ContractDeployOptions
+    options: ContractDeployOptions
   ): Promise<ContractDeployResult> {
-    return Contract.deploy(
-      this,
-      contractName,
-      contractAbiData,
-      constructorArgs,
-      options
-    );
+    return Contract.deploy(this, options);
   }
 
   /**
