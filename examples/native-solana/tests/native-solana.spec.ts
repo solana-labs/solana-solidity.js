@@ -22,16 +22,16 @@ describe('Native Solana', () => {
     );
     expect(solBalance).toBeGreaterThan(depositAmount);
 
-    // bankBalance = await contract.functions.deposit({
+    // ({result: bankBalance} = await contract.functions.deposit({
     //   value: depositAmount,
-    // });
+    // }));
     // solBalance = await program.connection.getBalance(
     //   program.programAccount.publicKey
     // );
     // expect(bankBalance.toString()).toBeCloseTo(depositAmount);
     // expect(solBalance.sub(bankBalance).toString()).toBeCloseTo(bankBalance);
 
-    // bankBalance = await contract.functions.withdraw(withdrawAmount);
+    // ({result: bankBalance} = await contract.functions.withdraw(withdrawAmount));
     // solBalance = await program.connection.getBalance(
     //   program.programAccount.publicKey
     // );

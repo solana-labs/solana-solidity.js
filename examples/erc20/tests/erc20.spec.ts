@@ -24,27 +24,29 @@ describe('ERC20', () => {
       program,
     } = await loadContract(__dirname, [NAME, SYMBOL, TOTAL_SUPPLY]));
 
-    let res = await token.functions.name();
-    expect(res.toString()).toEqual('Solana');
+    const { result: name } = await token.functions.name();
+    expect(name).toEqual('Solana');
 
-    res = await token.functions.symbol();
-    expect(res.toString()).toEqual('SOL');
+    const { result: symbol } = await token.functions.symbol();
+    expect(symbol).toEqual('SOL');
 
-    res = await token.functions.decimals();
-    expect(res).toEqual(18);
+    const { result: decimals } = await token.functions.decimals();
+    expect(decimals).toEqual(18);
 
-    res = await token.functions.totalSupply();
-    expect(res).toEqual(TOTAL_SUPPLY);
+    const { result: supply } = await token.functions.totalSupply();
+    expect(supply).toEqual(TOTAL_SUPPLY);
 
-    res = await token.functions.balanceOf(payerETHAddress);
-    expect(res).toEqual(TOTAL_SUPPLY);
+    const { result: balance } = await token.functions.balanceOf(
+      payerETHAddress
+    );
+    expect(balance).toEqual(TOTAL_SUPPLY);
   });
 
   it('loads existing contract', async function () {
     token = await program.getContract(contractAbi, token.getStorageKeyPair());
 
-    let res = await token.functions.name();
-    expect(res.toString()).toEqual('Solana');
+    const { result: name } = await token.functions.name();
+    expect(name).toEqual('Solana');
   });
 
   it('mutates contract state', async function () {
@@ -53,11 +55,15 @@ describe('ERC20', () => {
 
     await token.functions.transfer(otherAccount, transferAmount);
 
-    let res = await token.functions.balanceOf(otherAccount);
-    expect(res).toEqual(transferAmount);
+    const { result: otherAccountBalance } = await token.functions.balanceOf(
+      otherAccount
+    );
+    expect(otherAccountBalance).toEqual(transferAmount);
 
-    res = await token.functions.balanceOf(payerETHAddress);
-    expect(res).toEqual(TOTAL_SUPPLY.sub(transferAmount));
+    const { result: payerBalance } = await token.functions.balanceOf(
+      payerETHAddress
+    );
+    expect(payerBalance).toEqual(TOTAL_SUPPLY.sub(transferAmount));
   });
 
   it('emits events', async function () {

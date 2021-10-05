@@ -83,7 +83,8 @@ async function main() {
 
   // call a function
   console.log('invoking a contract call');
-  console.log('result: %s', await token.functions.symbol());
+  const { result } = await token.functions.symbol();
+  console.log('result: %s', result);
 
   console.log('success!');
 }

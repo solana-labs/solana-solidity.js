@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { Contract, TxError } from '../../../src';
+import { Contract, TransactionError } from '../../../src';
 import { loadContract } from '../../utils';
 
 describe('Errors', () => {
@@ -11,13 +11,13 @@ describe('Errors', () => {
   });
 
   it('catches reverts', async function () {
-    let res = await contract.functions.doRevert(false);
-    expect(res.toString()).toBe('3124445');
+    const { result } = await contract.functions.doRevert(false);
+    expect(result.toString()).toBe('3124445');
 
     try {
-      res = await contract.functions.doRevert(true);
+      await contract.functions.doRevert(true);
     } catch (_e) {
-      const e = _e as TxError;
+      const e = _e as TransactionError;
       expect(e.message).toBe('Do the revert thing');
       expect(e.computeUnitsUsed).toBe(1046);
       expect(e.logs.length).toBeGreaterThan(1);
@@ -28,13 +28,13 @@ describe('Errors', () => {
   });
 
   it('catches requires', async function () {
-    let res = await contract.functions.doRequire(false);
-    expect(res.toString()).toBe('3124445');
+    const { result } = await contract.functions.doRequire(false);
+    expect(result.toString()).toBe('3124445');
 
     try {
-      res = await contract.functions.doRequire(true);
+      await contract.functions.doRequire(true);
     } catch (_e) {
-      const e = _e as TxError;
+      const e = _e as TransactionError;
       expect(e.message).toBe('Do the require thing');
       expect(e.computeUnitsUsed).toBe(775);
       expect(e.logs.length).toBeGreaterThan(1);
@@ -45,13 +45,13 @@ describe('Errors', () => {
   });
 
   it('catches asserts', async function () {
-    let res = await contract.functions.doAssert(false);
-    expect(res.toString()).toBe('3124445');
+    const { result } = await contract.functions.doAssert(false);
+    expect(result.toString()).toBe('3124445');
 
     try {
-      res = await contract.functions.doAssert(true);
+      await contract.functions.doAssert(true);
     } catch (_e) {
-      const e = _e as TxError;
+      const e = _e as TransactionError;
       expect(e.message).toBe('return data or log not set');
       expect(e.computeUnitsUsed).toBe(580);
       expect(e.logs.length).toBeGreaterThan(1);
@@ -66,7 +66,7 @@ describe('Errors', () => {
     try {
       await loadContract(__dirname, [true]);
     } catch (_e) {
-      const e = _e as TxError;
+      const e = _e as TransactionError;
       expect(e.message).toBe('Do the revert thing');
       expect(e.computeUnitsUsed).toBe(824);
       expect(e.logs.length).toBeGreaterThan(1);

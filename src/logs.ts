@@ -6,7 +6,7 @@ const LOG_LOG_PREFIX = 'Program log: ';
 const LOG_COMPUTE_UNITS_RE = /consumed (\d+) of (\d+) compute units/i;
 const LOG_DATA_PREFIX = 'Program data: ';
 
-export class TxError extends Error {
+export class TransactionError extends Error {
   public logs: string[];
   public computeUnitsUsed: number;
 
@@ -271,16 +271,16 @@ export function parseTxError(
   log: string | null,
   logs: string[]
 ) {
-  let txErr: TxError;
+  let txErr: TransactionError;
 
   if (log) {
-    txErr = new TxError(log);
+    txErr = new TransactionError(log);
   } else {
     if (!encoded) {
-      txErr = new TxError('return data or log not set');
+      txErr = new TransactionError('return data or log not set');
     }
     // else if (encoded?.readUInt32BE(0) != 0x08c379a0) {
-    //   txErr = new TxError('signature not correct');
+    //   txErr = new TransactionError('signature not correct');
     // }
     else {
       const revertReason = ethers.utils.defaultAbiCoder.decode(
@@ -288,7 +288,7 @@ export function parseTxError(
         ethers.utils.hexDataSlice(encoded, 4)
       );
       // console.log(revertReason.toString(), computeUnitsUsed);
-      txErr = new TxError(revertReason.toString());
+      txErr = new TransactionError(revertReason.toString());
     }
   }
 

@@ -11,14 +11,23 @@ describe('TxParams', () => {
   });
 
   it('works without tx params', async function () {
-    let res = await contract.functions.sum([1, 2, 3]);
-    expect(res.toString()).toBe('6');
+    const { result, logs, computeUnitsUsed } = await contract.functions.sum([
+      1, 2, 3,
+    ]);
+    expect(result.toString()).toBe('6');
+    expect(logs.length).toBeGreaterThan(1);
+    expect(computeUnitsUsed).toBe(2612);
   });
 
   it('works with tx params', async function () {
-    let res = await contract.functions.sum([1, 2, 3], {
-      signers: [],
-    });
-    expect(res.toString()).toBe('6');
+    const { result, logs, computeUnitsUsed } = await contract.functions.sum(
+      [1, 2, 3],
+      {
+        signers: [],
+      }
+    );
+    expect(result.toString()).toBe('6');
+    expect(logs.length).toBeGreaterThan(1);
+    expect(computeUnitsUsed).toBe(2612);
   });
 });

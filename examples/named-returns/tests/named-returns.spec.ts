@@ -11,7 +11,9 @@ describe('Test', () => {
   });
 
   it('multiple named returns work', async function () {
-    const { a, b } = await contract.functions.noop(1, 2);
+    const {
+      result: { a, b },
+    } = await contract.functions.noop(1, 2);
     expect(a.toString()).toEqual('1');
     expect(b.toString()).toEqual('2');
   });

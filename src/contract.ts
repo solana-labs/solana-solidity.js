@@ -36,6 +36,12 @@ export type ContractTransactionOptions = {
   simulate?: boolean;
 };
 
+export type ContractCallResult = {
+  result: ethers.utils.Result | null;
+  computeUnitsUsed: number;
+  logs: string[];
+};
+
 export class Contract {
   /**
    * Deploy a new contract to a loaded Solang program
@@ -242,7 +248,7 @@ export class Contract {
     name: string,
     args: any[],
     options?: ContractTransactionOptions
-  ): Promise<ethers.utils.Result | null> {
+  ): Promise<ContractCallResult> {
     const {
       accounts = [],
       writableAccounts = [],
@@ -307,21 +313,30 @@ export class Contract {
     signers.unshift(this.program.payerAccount);
 
     let encoded;
+    let logs: string[] = [];
+    let computeUnitsUsed = 0;
 
     if (simulate) {
-      const {
-        value: { err, logs },
-      } = await this.program.connection.simulateTransaction(
-        new Transaction().add(instruction),
-        signers
-      );
+      const simulateTxResult =
+        await this.program.connection.simulateTransaction(
+          new Transaction().add(instruction),
+          signers
+        );
+
+      logs = simulateTxResult.value.logs ?? [];
       // console.log(logs);
-      const { encoded: _encoded, computeUnitsUsed, log } = parseTxLogs(logs!);
 
-      encoded = _encoded;
+      const parseTxLogsResult = parseTxLogs(logs);
+      encoded = parseTxLogsResult.encoded;
+      computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
 
-      if (err) {
-        throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
+      if (simulateTxResult.value.err) {
+        throw parseTxError(
+          encoded,
+          computeUnitsUsed,
+          parseTxLogsResult.log,
+          logs
+        );
       }
     } else {
       let sig;
@@ -337,44 +352,51 @@ export class Contract {
           }
         );
       } catch {
-        const {
-          value: { err, logs },
-        } = await this.program.connection.simulateTransaction(
-          new Transaction().add(instruction),
-          signers
-        );
+        const simulateTxResult =
+          await this.program.connection.simulateTransaction(
+            new Transaction().add(instruction),
+            signers
+          );
+        logs = simulateTxResult.value.logs ?? [];
         // console.log(logs);
 
-        if (!err) {
+        if (!simulateTxResult.value.err) {
           throw new Error('error is not falsy');
         }
 
-        const { log, encoded: _encoded, computeUnitsUsed } = parseTxLogs(logs!);
-        encoded = _encoded;
-        throw parseTxError(encoded, computeUnitsUsed, log, logs ?? []);
+        const parseTxLogsResult = parseTxLogs(logs);
+        throw parseTxError(
+          parseTxLogsResult.encoded,
+          parseTxLogsResult.computeUnitsUsed,
+          parseTxLogsResult.log,
+          logs
+        );
       }
 
       const parsedTx =
         await this.program.connection.getParsedConfirmedTransaction(sig);
-      const logs = parsedTx!.meta?.logMessages!;
+      logs = parsedTx!.meta?.logMessages ?? [];
       // console.log(logs);
 
-      const { encoded: _encoded } = parseTxLogs(logs);
-      encoded = _encoded;
+      const parseTxLogsResult = parseTxLogs(logs);
+      encoded = parseTxLogsResult.encoded;
+      computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
     }
+
+    let result: ethers.utils.Result | null = null;
 
     if (fragment.outputs?.length) {
       if (!encoded) {
         throw new Error('return data not set');
       }
 
-      const result = this.abi.decodeFunctionResult(fragment, encoded);
+      result = this.abi.decodeFunctionResult(fragment, encoded);
       if (fragment.outputs.length === 1) {
-        return result[0];
+        result = result[0];
       }
-      return result;
     }
-    return null;
+
+    return { result, logs, computeUnitsUsed };
   }
 
   /**
