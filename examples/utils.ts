@@ -25,7 +25,7 @@ export async function loadContract(
   const program = await Program.deploy(connection, payerAccount, programSo);
   const payerETHAddress = pubKeyToHex(payerAccount.publicKey);
 
-  const contract = await program.deployContract(
+  const { contract } = await program.deployContract(
     contractFile.split('.abi')[0],
     contractAbi,
     constructorArgs,

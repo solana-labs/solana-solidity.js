@@ -6,11 +6,20 @@ import {
   SystemProgram,
   Transaction,
   sendAndConfirmTransaction,
+  TransactionInstruction,
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
+import { ContractDeployResult } from 'src';
 
 import { Contract, ContractDeployOptions } from './contract';
-import { LogsParser, LogCallback, EventCallback } from './logs';
+import {
+  LogsParser,
+  LogCallback,
+  EventCallback,
+  parseTxError,
+  parseTxLogs,
+} from './logs';
+
 export class Program {
   private logs: LogsParser;
 
@@ -176,7 +185,7 @@ export class Program {
     contractAbiData: string,
     constructorArgs: any[],
     options?: ContractDeployOptions
-  ): Promise<Contract> {
+  ): Promise<ContractDeployResult> {
     return Contract.deploy(
       this,
       contractName,
@@ -199,5 +208,93 @@ export class Program {
     contractStorageAccount: Keypair
   ): Promise<Contract> {
     return Contract.get(this, abiData, contractStorageAccount);
+  }
+
+  /**
+   * Make and execute a transaction with the given `instruction` and `signers`
+   *
+   * @param simulate     Whether to perform a dry-run
+   * @param instruction  Solana instruction
+   * @param signers      List of signers
+   * @returns            Transaction result
+   */
+  public async makeTx(
+    simulate: Boolean,
+    instruction: TransactionInstruction,
+    signers: Keypair[]
+  ): Promise<{
+    encoded: string | null;
+    logs: string[];
+    computeUnitsUsed: number;
+  }> {
+    let encoded;
+    let logs: string[] = [];
+    let computeUnitsUsed = 0;
+
+    if (simulate) {
+      const simulateTxResult = await this.connection.simulateTransaction(
+        new Transaction().add(instruction),
+        signers
+      );
+
+      logs = simulateTxResult.value.logs ?? [];
+      // console.log(logs);
+
+      const parseTxLogsResult = parseTxLogs(logs);
+      encoded = parseTxLogsResult.encoded;
+      computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
+
+      if (simulateTxResult.value.err) {
+        throw parseTxError(
+          encoded,
+          computeUnitsUsed,
+          parseTxLogsResult.log,
+          logs
+        );
+      }
+    } else {
+      let sig;
+      try {
+        sig = await sendAndConfirmTransaction(
+          this.connection,
+          new Transaction().add(instruction),
+          signers,
+          {
+            skipPreflight: false,
+            commitment: 'confirmed',
+            preflightCommitment: undefined,
+          }
+        );
+      } catch {
+        const simulateTxResult = await this.connection.simulateTransaction(
+          new Transaction().add(instruction),
+          signers
+        );
+        logs = simulateTxResult.value.logs ?? [];
+        // console.log(logs);
+
+        if (!simulateTxResult.value.err) {
+          throw new Error('error is not falsy');
+        }
+
+        const parseTxLogsResult = parseTxLogs(logs);
+        throw parseTxError(
+          parseTxLogsResult.encoded,
+          parseTxLogsResult.computeUnitsUsed,
+          parseTxLogsResult.log,
+          logs
+        );
+      }
+
+      const parsedTx = await this.connection.getParsedConfirmedTransaction(sig);
+      logs = parsedTx!.meta?.logMessages ?? [];
+      // console.log(logs);
+
+      const parseTxLogsResult = parseTxLogs(logs);
+      encoded = parseTxLogsResult.encoded;
+      computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
+    }
+
+    return { encoded, logs, computeUnitsUsed };
   }
 }

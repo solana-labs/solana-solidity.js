@@ -2,7 +2,7 @@ import expect from 'expect';
 import { Contract } from '../../../src';
 import { loadContract } from '../../utils';
 
-describe('Test', () => {
+describe('Named Returns', () => {
   let contract: Contract;
 
   before(async function () {
@@ -10,7 +10,7 @@ describe('Test', () => {
     ({ contract } = await loadContract(__dirname));
   });
 
-  it('multiple named returns work', async function () {
+  it('work', async function () {
     const {
       result: { a, b },
     } = await contract.functions.noop(1, 2);

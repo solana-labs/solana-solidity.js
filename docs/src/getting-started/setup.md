@@ -72,7 +72,7 @@ async function main() {
   const contractName = 'ERC20';
   const contractAbi = CONTRACT_ABI;
   const constructorArgs = ['Solana', 'SOL', 10000];
-  const token = await program.deployContract(
+  const { contract: token } = await program.deployContract(
     contractName,
     contractAbi,
     constructorArgs,
