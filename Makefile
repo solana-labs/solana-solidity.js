@@ -26,7 +26,6 @@ deploy-docs:
 	@$(MAKE) -C docs
 
 publish:
-	@npm run prepublish
 	@npm run publish
 
 .PHONY: test-example test-all-examples test-unit validator deploy-docs publish
