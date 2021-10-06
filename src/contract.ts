@@ -6,7 +6,7 @@ import {
 } from '@solana/web3.js';
 import { ethers } from 'ethers';
 
-import { EventCallback } from './logs';
+import { EventCallback, parseLogTopic } from './logs';
 import { encodeSeeds, numToPaddedHex } from './utils';
 import { Program } from './program';
 
@@ -46,6 +46,7 @@ export type ContractCallResult = {
   result: ethers.utils.Result | null;
   computeUnitsUsed: number;
   logs: string[];
+  events: ethers.utils.LogDescription[];
 };
 
 export class Contract {
@@ -69,7 +70,7 @@ export class Contract {
       writableAccounts = [],
       seeds = [],
       signers = [],
-      caller = undefined,
+      caller = program.payerAccount.publicKey,
       value = 0,
       simulate = false,
     } = options ?? {};
@@ -82,7 +83,7 @@ export class Contract {
 
     const data = Buffer.concat([
       contractStorageAccount.publicKey.toBuffer(),
-      (caller || program.payerAccount.publicKey).toBuffer(),
+      caller.toBuffer(),
       Buffer.from(numToPaddedHex(value), 'hex'),
       Buffer.from(hash.substr(2, 8), 'hex'),
       encodeSeeds(seeds),
@@ -221,7 +222,7 @@ export class Contract {
       writableAccounts = [],
       seeds = [],
       signers = [],
-      caller,
+      caller = this.program.payerAccount.publicKey,
       value = 0,
       simulate = false,
     } = options ?? {};
@@ -231,7 +232,7 @@ export class Contract {
 
     const data = Buffer.concat([
       this.contractStorageAccount.publicKey.toBuffer(),
-      (caller || this.program.payerAccount.publicKey).toBuffer(),
+      caller.toBuffer(),
       Buffer.from(numToPaddedHex(value), 'hex'),
       Buffer.from('00000000', 'hex'),
       encodeSeeds(seeds),
@@ -298,7 +299,24 @@ export class Contract {
       }
     }
 
-    return { result, logs, computeUnitsUsed };
+    const events: ethers.utils.LogDescription[] = [];
+
+    for (const log of logs) {
+      const eventData = parseLogTopic(log);
+      if (eventData) {
+        let event: ethers.utils.LogDescription | null = null;
+        try {
+          event = this.abi.parseLog(eventData);
+        } catch (e) {
+          // console.log(e);
+        }
+        if (event) {
+          events.push(event);
+        }
+      }
+    }
+
+    return { result, logs, computeUnitsUsed, events };
   }
 
   /**
