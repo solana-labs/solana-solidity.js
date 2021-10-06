@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs';
-import { Connection } from '@solana/web3.js';
+import { Connection, Keypair } from '@solana/web3.js';
 
-import { Program, newAccountWithLamports, pubKeyToHex } from '../src';
+import { Program, pubKeyToHex } from '../src';
 
 const DEFAULT_URL: string = 'http://localhost:8899';
 
@@ -45,4 +45,31 @@ export async function loadContract(
 export function getConnection(rpcUrl?: string): Connection {
   let url = rpcUrl || process.env.RPC_URL || DEFAULT_URL;
   return new Connection(url, 'confirmed');
+}
+
+export async function newAccountWithLamports(
+  connection: Connection,
+  lamports: number = 10000000000
+): Promise<Keypair> {
+  const account = Keypair.generate();
+
+  let retries = 10;
+  await connection.requestAirdrop(account.publicKey, lamports);
+  for (;;) {
+    await sleep(500);
+    if (lamports == (await connection.getBalance(account.publicKey))) {
+      return account;
+    }
+    if (--retries <= 0) {
+      break;
+    }
+    // console.log('airdrop retry ' + retries);
+  }
+  throw new Error(`airdrop of ${lamports} failed`);
+}
+
+export function sleep(ms: number) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
 }

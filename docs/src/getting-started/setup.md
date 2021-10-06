@@ -41,8 +41,8 @@ npm install solana-solidity
 7. Paste the following in a `example.js` file:
 
 ```js
-const { Connection } = require('@solana/web3.js');
-const { Program, newAccountWithLamports } = require('solana-solidity');
+const { Connection, Keypair } = require('@solana/web3.js');
+const { Program } = require('solana-solidity');
 const fs = require('fs');
 
 const CONTRACT_ABI = fs.readFileSync('./build/ERC20.abi', 'utf8');
@@ -85,6 +85,33 @@ async function main() {
   console.log('result: %s', result);
 
   console.log('success!');
+}
+
+async function newAccountWithLamports(
+  connection: Connection,
+  lamports: number = 10000000000
+): Promise<Keypair> {
+  const account = Keypair.generate();
+
+  let retries = 10;
+  await connection.requestAirdrop(account.publicKey, lamports);
+  for (;;) {
+    await sleep(500);
+    if (lamports == (await connection.getBalance(account.publicKey))) {
+      return account;
+    }
+    if (--retries <= 0) {
+      break;
+    }
+    // console.log('airdrop retry ' + retries);
+  }
+  throw new Error(`airdrop of ${lamports} failed`);
+}
+
+function sleep(ms: number) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
 }
 ```
 
