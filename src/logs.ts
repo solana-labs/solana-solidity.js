@@ -1,4 +1,4 @@
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { ethers } from 'ethers';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
@@ -30,6 +30,11 @@ export type EventCallback = (...args: any) => void;
 export type LogCallback = (msg: string) => void;
 
 export class LogsParser {
+  /**
+   * Program ID for event subscriptions.
+   */
+  private _programId: PublicKey;
+
   /**
    * Connection.
    */
@@ -63,7 +68,8 @@ export class LogsParser {
    */
   private _onLogsSubscriptionId: number | undefined;
 
-  constructor(connection: Connection) {
+  constructor(programId: PublicKey, connection: Connection) {
+    this._programId = programId;
     this._connection = connection;
     this._eventCallbacks = new Map();
     this._eventListeners = new Map();
@@ -181,35 +187,38 @@ export class LogsParser {
   }
 
   private processLogs() {
-    this._onLogsSubscriptionId = this._connection.onLogs('all', (logs, ctx) => {
-      if (logs.err) {
-        return;
-      }
-      for (const log of logs.logs) {
-        const eventData = parseLogTopic(log);
-        const msg = parseLogLog(log);
+    this._onLogsSubscriptionId = this._connection.onLogs(
+      this._programId,
+      (logs, ctx) => {
+        if (logs.err) {
+          return;
+        }
+        for (const log of logs.logs) {
+          const eventData = parseLogTopic(log);
+          const msg = parseLogLog(log);
 
-        if (eventData) {
-          for (const [, callback, abi] of this._eventCallbacks.values()) {
-            let event: ethers.utils.LogDescription | null = null;
-            try {
-              event = abi.parseLog(eventData);
-            } catch (e) {
-              // console.log(e);
+          if (eventData) {
+            for (const [, callback, abi] of this._eventCallbacks.values()) {
+              let event: ethers.utils.LogDescription | null = null;
+              try {
+                event = abi.parseLog(eventData);
+              } catch (e) {
+                // console.log(e);
+              }
+              if (event) {
+                callback(...event.args);
+              }
             }
-            if (event) {
-              callback(...event.args);
+          }
+
+          if (msg) {
+            for (const callback of this._logCallbacks.values()) {
+              callback(msg);
             }
           }
         }
-
-        if (msg) {
-          for (const callback of this._logCallbacks.values()) {
-            callback(msg);
-          }
-        }
       }
-    });
+    );
   }
 
   /**

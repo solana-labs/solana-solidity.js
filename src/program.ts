@@ -87,7 +87,7 @@ export class Program {
     public payerAccount: Keypair,
     public programAccount: Keypair
   ) {
-    this.logs = new LogsParser(this.connection);
+    this.logs = new LogsParser(this.programAccount.publicKey, this.connection);
   }
 
   /**
