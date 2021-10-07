@@ -75,4 +75,23 @@ describe('Errors', () => {
 
     throw new Error('does not throw');
   });
+
+  it('catches divide by zero', async function () {
+    this.timeout(150000);
+
+    const { result } = await contract.functions.divide(15, 5);
+    expect(result.toString()).toBe('3');
+
+    try {
+      await contract.functions.divide(15, 0);
+    } catch (_e) {
+      const e = _e as TransactionError;
+      expect(e.message).toBe('divide by zero');
+      expect(e.computeUnitsUsed).toBe(775);
+      expect(e.logs.length).toBeGreaterThan(1);
+      return;
+    }
+
+    throw new Error('does not throw');
+  });
 });
