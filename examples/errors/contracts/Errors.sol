@@ -22,4 +22,8 @@ contract Errors {
         assert(!yes);
         return 3124445;
     }
+
+    function divide(uint64 dividend, uint64 divisor) public pure returns (uint64) {
+        return dividend / divisor;
+    }
 }
