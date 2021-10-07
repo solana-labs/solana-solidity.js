@@ -6,9 +6,19 @@ import { loadContract } from '../../utils';
 describe('Events', () => {
   let contract: Contract;
 
-  before(async function () {
+  it('get returned in contract deploy results', async function () {
     this.timeout(150000);
-    ({ contract } = await loadContract(__dirname));
+
+    const result = await loadContract(__dirname);
+    contract = result.contract;
+    const events = result.events;
+    expect(events.length).toEqual(1);
+
+    const [{ args }] = events;
+    expect(args.length).toEqual(3);
+    expect(args[0].toString()).toEqual('102');
+    expect(args[1]).toEqual(true);
+    expect(args[2]).toEqual('foobar');
   });
 
   it('can be subscribed', async function () {

@@ -25,7 +25,7 @@ export async function loadContract(
   const program = await Program.deploy(connection, payerAccount, programSo);
   const payerETHAddress = pubKeyToHex(payerAccount.publicKey);
 
-  const { contract } = await program.deployContract({
+  const { contract, events } = await program.deployContract({
     name: contractFile.split('.abi')[0],
     abi: contractAbi,
     space: 8192 * 8,
@@ -39,6 +39,7 @@ export async function loadContract(
     payerETHAddress,
     contract,
     contractAbi,
+    events,
   };
 }
 

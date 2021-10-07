@@ -40,6 +40,7 @@ export type ContractDeployResult = {
   contract: Contract;
   computeUnitsUsed: number;
   logs: string[];
+  events: ethers.utils.LogDescription[];
 };
 
 export type ContractCallResult = {
@@ -137,10 +138,19 @@ export class Contract {
       signers
     );
 
+    const contract = new Contract(
+      program,
+      contractStorageAccount,
+      contractAbiData
+    );
+
+    const events = contract.parseLogsEvents(logs);
+
     return {
-      contract: new Contract(program, contractStorageAccount, contractAbiData),
+      contract,
       logs,
       computeUnitsUsed,
+      events,
     };
   }
 
@@ -299,22 +309,7 @@ export class Contract {
       }
     }
 
-    const events: ethers.utils.LogDescription[] = [];
-
-    for (const log of logs) {
-      const eventData = parseLogTopic(log);
-      if (eventData) {
-        let event: ethers.utils.LogDescription | null = null;
-        try {
-          event = this.abi.parseLog(eventData);
-        } catch (e) {
-          // console.log(e);
-        }
-        if (event) {
-          events.push(event);
-        }
-      }
-    }
+    const events = this.parseLogsEvents(logs);
 
     return { result, logs, computeUnitsUsed, events };
   }
@@ -357,5 +352,31 @@ export class Contract {
    */
   public async removeEventListener(listener: number): Promise<void> {
     return await this.program.removeEventListener(listener);
+  }
+
+  /**
+   *
+   * @param logs
+   * @returns
+   */
+  public parseLogsEvents(logs: string[]): ethers.utils.LogDescription[] {
+    const events: ethers.utils.LogDescription[] = [];
+
+    for (const log of logs) {
+      const eventData = parseLogTopic(log);
+      if (eventData) {
+        let event: ethers.utils.LogDescription | null = null;
+        try {
+          event = this.abi.parseLog(eventData);
+        } catch (e) {
+          // console.log(e);
+        }
+        if (event) {
+          events.push(event);
+        }
+      }
+    }
+
+    return events;
   }
 }
