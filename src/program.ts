@@ -148,16 +148,15 @@ export class Program {
   /**
    * Invokes the given callback every time the given event is emitted.
    *
-   * @param eventName The PascalCase name of the event, provided by the IDL.
+   * @param abi       ABI interface
    * @param callback  The function to invoke whenever the event is emitted from
    *                  program logs.
    */
   public addEventListener(
     abi: ethers.utils.Interface,
-    eventName: string,
     callback: EventCallback
   ): number {
-    return this.logs.addEventListener(abi, eventName, callback);
+    return this.logs.addEventListener(abi, callback);
   }
 
   /**

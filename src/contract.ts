@@ -339,12 +339,11 @@ export class Contract {
   /**
    * Invokes the given callback every time the given event is emitted.
    *
-   * @param eventName The PascalCase name of the event, provided by the IDL.
    * @param callback  The function to invoke whenever the event is emitted from
    *                  program logs.
    */
-  public addEventListener(eventName: string, callback: EventCallback): number {
-    return this.program.addEventListener(this.abi, eventName, callback);
+  public addEventListener(callback: EventCallback): number {
+    return this.program.addEventListener(this.abi, callback);
   }
 
   /**

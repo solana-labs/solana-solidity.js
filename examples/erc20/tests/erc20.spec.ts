@@ -70,18 +70,18 @@ describe('ERC20', () => {
     const spenderAccount = pubKeyToHex(Keypair.generate().publicKey);
     const spendAmount = ethers.utils.parseEther('0.9');
 
-    await new Promise((resolve) => {
-      let listenId = token.addEventListener(
-        'Approval',
-        async (owner: string, spender: string, value: ethers.BigNumber) => {
-          expect(owner).toEqual(payerETHAddress);
-          expect(spender).toEqual(spenderAccount);
-          expect(value.eq(spendAmount)).toBeTruthy;
-          await token.removeEventListener(listenId);
-          resolve(true);
-        }
-      );
+    const event: ethers.utils.LogDescription = await new Promise((resolve) => {
+      let listenId = token.addEventListener(async (event) => {
+        await token.removeEventListener(listenId);
+        resolve(event);
+      });
       token.functions.approve(spenderAccount, spendAmount);
     });
+
+    expect(event.name).toEqual('Approval');
+    const [owner, spender, value] = event.args;
+    expect(owner).toEqual(payerETHAddress);
+    expect(spender).toEqual(spenderAccount);
+    expect(value.eq(spendAmount)).toBeTruthy;
   });
 });

@@ -24,7 +24,7 @@ export type EventData = {
 };
 
 // Event callback.
-export type EventCallback = (...args: any) => void;
+export type EventCallback = (event: ethers.utils.LogDescription) => void;
 
 // Log callback.
 export type LogCallback = (msg: string) => void;
@@ -41,27 +41,19 @@ export class LogsParser {
   private _connection: Connection;
 
   /**
-   * Maps event listener id to [event-name, callback].
+   * The next listener id to allocate.
    */
-  private _eventCallbacks: Map<
-    number,
-    [string, EventCallback, ethers.utils.Interface]
-  >;
+  private _listenerIdCount: number;
 
   /**
-   * Maps event name to all listeners for the event.
+   * Maps event listener id to [abi, callback].
    */
-  private _eventListeners: Map<string, Array<number>>;
+  private _eventCallbacks: Map<number, [ethers.utils.Interface, EventCallback]>;
 
   /**
    * Maps log listener id to callback.
    */
   private _logCallbacks: Map<number, LogCallback>;
-
-  /**
-   * The next listener id to allocate.
-   */
-  private _listenerIdCount: number;
 
   /**
    * The subscription id from the connection onLogs subscription.
@@ -72,7 +64,6 @@ export class LogsParser {
     this._programId = programId;
     this._connection = connection;
     this._eventCallbacks = new Map();
-    this._eventListeners = new Map();
     this._logCallbacks = new Map();
     this._listenerIdCount = 0;
   }
@@ -80,31 +71,17 @@ export class LogsParser {
   /**
    *
    * @param abi
-   * @param eventName
    * @param callback
    * @returns
    */
   public addEventListener(
     abi: ethers.utils.Interface,
-    eventName: string,
     callback: EventCallback
   ): number {
-    let listener = this._listenerIdCount;
-    this._listenerIdCount += 1;
+    let listener = this.getNewListenerId();
 
-    const eventHash = abi.getEventTopic(eventName);
-
-    // Store the listener into the event map.
-    if (!(eventHash in this._eventCallbacks)) {
-      this._eventListeners.set(eventHash, []);
-    }
-    this._eventListeners.set(
-      eventHash,
-      (this._eventListeners.get(eventHash) ?? []).concat(listener)
-    );
-
-    // Store the callback into the listener map.
-    this._eventCallbacks.set(listener, [eventHash, callback, abi]);
+    // Store the callback into the events listeners map.
+    this._eventCallbacks.set(listener, [abi, callback]);
 
     // Create the subscription singleton, if needed.
     if (this._onLogsSubscriptionId !== undefined) {
@@ -126,20 +103,8 @@ export class LogsParser {
     if (!callback) {
       throw new Error(`Event listener ${listener} doesn't exist!`);
     }
-    const [eventName] = callback;
 
-    // Get the listeners.
-    let listeners = this._eventListeners.get(eventName);
-    if (!listeners) {
-      throw new Error(`Event listeners don't exist for ${eventName}!`);
-    }
-
-    // Update both maps.
     this._eventCallbacks.delete(listener);
-    listeners = listeners.filter((l) => l !== listener);
-    if (listeners.length === 0) {
-      this._eventListeners.delete(eventName);
-    }
 
     await this.stopProcessingLogs();
   }
@@ -198,7 +163,7 @@ export class LogsParser {
           const msg = parseLogLog(log);
 
           if (eventData) {
-            for (const [, callback, abi] of this._eventCallbacks.values()) {
+            for (const [abi, callback] of this._eventCallbacks.values()) {
               let event: ethers.utils.LogDescription | null = null;
               try {
                 event = abi.parseLog(eventData);
@@ -206,7 +171,7 @@ export class LogsParser {
                 // console.log(e);
               }
               if (event) {
-                callback(...event.args);
+                callback(event);
               }
             }
           }

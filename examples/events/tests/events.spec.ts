@@ -22,16 +22,19 @@ describe('Events', () => {
   });
 
   it('can be subscribed', async function () {
-    const args: ethers.utils.LogDescription[] = await new Promise(
+    const event: ethers.utils.LogDescription = await new Promise(
       async (resolve) => {
-        let listenId = contract.addEventListener('First', async (...args) => {
+        let listenId = contract.addEventListener(async (event) => {
           await contract.removeEventListener(listenId);
-          resolve(args);
+          resolve(event);
         });
         await contract.functions.first();
       }
     );
 
+    expect(event.name).toEqual('First');
+
+    const { args } = event;
     expect(args.length).toEqual(3);
     expect(args[0].toString()).toEqual('102');
     expect(args[1]).toEqual(true);
