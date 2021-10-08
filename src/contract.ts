@@ -19,7 +19,7 @@ export type ContractDeployOptions = {
   constructorArgs?: any[];
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
-  // programDerivedAccounts?: PublicKey[];
+  // programDerivedAddresses?: PublicKey[];
   seeds?: any[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
@@ -30,7 +30,7 @@ export type ContractDeployOptions = {
 export type ContractTransactionOptions = {
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
-  programDerivedAccounts?: PublicKey[];
+  programDerivedAddresses?: PublicKey[];
   seeds?: any[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
@@ -94,7 +94,7 @@ export class Contract {
     ]);
 
     const keys = [
-      // ...programDerivedAccounts.map((pubkey) => ({
+      // ...programDerivedAddresses.map((pubkey) => ({
       //   pubkey,
       //   isSigner: false,
       //   isWritable: true,
@@ -232,7 +232,7 @@ export class Contract {
     const {
       accounts = [],
       writableAccounts = [],
-      programDerivedAccounts = [],
+      programDerivedAddresses = [],
       seeds = [],
       signers = [],
       caller = this.program.payerAccount.publicKey,
@@ -253,7 +253,7 @@ export class Contract {
     ]);
 
     const keys = [
-      ...programDerivedAccounts.map((pubkey) => ({
+      ...programDerivedAddresses.map((pubkey) => ({
         pubkey,
         isSigner: false,
         isWritable: true,

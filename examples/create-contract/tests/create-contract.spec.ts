@@ -25,7 +25,7 @@ describe('CreateContract', () => {
       writableAccounts: [contract.getProgramKey()],
       seeds: [childSeed],
       signers: [contract.getStorageKeyPair()],
-      programDerivedAccounts: [childAccount],
+      programDerivedAddresses: [childAccount],
     });
 
     expect(logs.toString()).toContain('Hello there');
