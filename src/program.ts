@@ -1,5 +1,6 @@
 import {
   Keypair,
+  PublicKey,
   Connection,
   BpfLoader,
   BPF_LOADER_PROGRAM_ID,
@@ -8,6 +9,7 @@ import {
   sendAndConfirmTransaction,
   TransactionInstruction,
 } from '@solana/web3.js';
+import crypto from 'crypto';
 import { ethers } from 'ethers';
 import { ContractDeployResult } from 'src';
 
@@ -91,6 +93,33 @@ export class Program {
   }
 
   /**
+   * Create program address
+   *
+   * @param salt
+   * @returns
+   */
+  async createProgramAddress(): Promise<{
+    account: PublicKey;
+    seed: Buffer;
+  } | null> {
+    while (true) {
+      const seed = crypto.randomBytes(7);
+
+      let account: PublicKey | null = null;
+      try {
+        account = await PublicKey.createProgramAddress(
+          [seed],
+          this.programAccount.publicKey
+        );
+      } catch {}
+
+      if (account) {
+        return { account, seed };
+      }
+    }
+  }
+
+  /**
    * Create a storage account
    *
    * @param space
@@ -101,7 +130,7 @@ export class Program {
       space
     );
 
-    let account = Keypair.generate();
+    const account = Keypair.generate();
 
     const transaction = new Transaction().add(
       SystemProgram.createAccount({
@@ -217,12 +246,12 @@ export class Program {
     let logs: string[] = [];
     let computeUnitsUsed = 0;
 
-    const tx = new Transaction();
-    instructions.forEach((instruction) => tx.add(instruction));
+    const transaction = new Transaction();
+    instructions.forEach((instruction) => transaction.add(instruction));
 
     if (simulate) {
       const simulateTxResult = await this.connection.simulateTransaction(
-        tx,
+        transaction,
         signers
       );
 
@@ -244,15 +273,20 @@ export class Program {
     } else {
       let sig;
       try {
-        sig = await sendAndConfirmTransaction(this.connection, tx, signers, {
-          skipPreflight: false,
-          commitment: 'confirmed',
-          preflightCommitment: undefined,
-        });
+        sig = await sendAndConfirmTransaction(
+          this.connection,
+          transaction,
+          signers,
+          {
+            skipPreflight: false,
+            commitment: 'confirmed',
+            preflightCommitment: undefined,
+          }
+        );
       } catch (e) {
         console.log(e);
         const simulateTxResult = await this.connection.simulateTransaction(
-          tx,
+          transaction,
           signers
         );
         logs = simulateTxResult.value.logs ?? [];

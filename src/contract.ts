@@ -7,7 +7,7 @@ import {
 import { ethers } from 'ethers';
 
 import { EventCallback, parseLogTopic } from './logs';
-import { encodeSeeds, numToPaddedHex, createProgramAddress } from './utils';
+import { encodeSeeds, numToPaddedHex } from './utils';
 import { Program } from './program';
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
@@ -19,6 +19,7 @@ export type ContractDeployOptions = {
   constructorArgs?: any[];
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
+  // programDerivedAccounts?: PublicKey[];
   seeds?: any[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
@@ -29,6 +30,7 @@ export type ContractDeployOptions = {
 export type ContractTransactionOptions = {
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
+  programDerivedAccounts?: PublicKey[];
   seeds?: any[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
@@ -92,8 +94,8 @@ export class Contract {
     ]);
 
     const keys = [
-      // ...seeds.map((seed) => ({
-      //   pubkey: seed.address,
+      // ...programDerivedAccounts.map((pubkey) => ({
+      //   pubkey,
       //   isSigner: false,
       //   isWritable: true,
       // })),
@@ -186,7 +188,7 @@ export class Contract {
   ) {
     this.abi = new ethers.utils.Interface(abiData);
     this.functions = {};
-    Object.entries(this.abi.functions).forEach(([, frag]) => {
+    Object.values(this.abi.functions).forEach((frag) => {
       this.functions[frag.name] = this.buildCall(frag);
     });
   }
@@ -230,6 +232,7 @@ export class Contract {
     const {
       accounts = [],
       writableAccounts = [],
+      programDerivedAccounts = [],
       seeds = [],
       signers = [],
       caller = this.program.payerAccount.publicKey,
@@ -250,6 +253,11 @@ export class Contract {
     ]);
 
     const keys = [
+      ...programDerivedAccounts.map((pubkey) => ({
+        pubkey,
+        isSigner: false,
+        isWritable: true,
+      })),
       {
         pubkey: this.contractStorageAccount.publicKey,
         isSigner: false,
@@ -279,7 +287,7 @@ export class Contract {
 
     const instruction = new TransactionInstruction({
       keys,
-      programId: this.program.programAccount.publicKey,
+      programId: this.getProgramKey(),
       data,
     });
 
@@ -311,16 +319,10 @@ export class Contract {
 
   /**
    *
-   * @param test
-   * @param upto
    * @returns
    */
-  async contractStorage(test: Program, upto: number): Promise<Buffer> {
-    const accountInfo = await test.connection.getAccountInfo(
-      this.contractStorageAccount.publicKey
-    );
-
-    return accountInfo!.data;
+  getProgramKey(): PublicKey {
+    return this.program.programAccount.publicKey;
   }
 
   /**
@@ -359,15 +361,8 @@ export class Contract {
     for (const log of logs) {
       const eventData = parseLogTopic(log);
       if (eventData) {
-        let event: ethers.utils.LogDescription | null = null;
-        try {
-          event = this.abi.parseLog(eventData);
-        } catch (e) {
-          // console.log(e);
-        }
-        if (event) {
-          events.push(event);
-        }
+        const event = this.abi.parseLog(eventData);
+        events.push(event);
       }
     }
 

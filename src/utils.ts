@@ -1,25 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
 
-export async function createProgramAddress(
-  program: PublicKey,
-  salt: Buffer
-): Promise<{ address: PublicKey; seed: Buffer } | null> {
-  for (let bump = 0; bump < 256; bump++) {
-    const seed = Buffer.concat([salt, Uint8Array.from([bump])]);
-
-    let pda: PublicKey | null = null;
-    try {
-      pda = await PublicKey.createProgramAddress([seed], program);
-    } catch {}
-
-    if (pda) {
-      return { address: pda, seed };
-    }
-  }
-
-  return null;
-}
-
 export function encodeSeeds(seeds: Buffer[]): Buffer {
   let seedEncoded = Buffer.alloc(
     1 + seeds.map((seed) => seed.length + 1).reduce((a, b) => a + b, 0)

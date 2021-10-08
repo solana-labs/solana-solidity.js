@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { Contract, Program, createProgramAddress } from '../../../src';
+import { Contract, Program } from '../../../src';
 import { loadContract } from '../../utils';
 
 describe('CreateContract', () => {
@@ -11,16 +11,21 @@ describe('CreateContract', () => {
     ({ contract, program } = await loadContract(__dirname, [], 'Creator'));
   });
 
-  it('Create Child', async function () {
-    const { address, seed: childSeed } = (await createProgramAddress(
-      program.programAccount.publicKey,
-      Buffer.from('child seed')
-    ))!;
+  it('Creates child contract', async function () {
+    const [childSeedAndAccount, { publicKey: childStorageAccount }] =
+      await Promise.all([
+        program.createProgramAddress(),
+        program.createStorageAccount(1024),
+      ]);
+
+    const { seed: childSeed, account: childAccount } = childSeedAndAccount!;
 
     const { logs } = await contract.functions.createChild({
-      accounts: [program.programAccount.publicKey],
-      writeableAccounts: [address],
+      accounts: [childStorageAccount],
+      writableAccounts: [contract.getProgramKey()],
       seeds: [childSeed],
+      signers: [contract.getStorageKeyPair()],
+      programDerivedAccounts: [childAccount],
     });
 
     expect(logs.toString()).toContain('Hello there');
