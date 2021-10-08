@@ -165,8 +165,15 @@ export class LogsParser {
 
           if (eventData) {
             for (const [abi, callback] of this._eventCallbacks.values()) {
-              const event = abi.parseLog(eventData);
-              callback(event);
+              let event: ethers.utils.LogDescription | null = null;
+              try {
+                event = abi.parseLog(eventData);
+              } catch (e) {
+                // console.log(e);
+              }
+              if (event) {
+                callback(event);
+              }
             }
           }
 
