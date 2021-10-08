@@ -206,7 +206,7 @@ export class Program {
    */
   public async makeTx(
     simulate: Boolean,
-    instruction: TransactionInstruction,
+    instructions: TransactionInstruction[],
     signers: Keypair[]
   ): Promise<{
     encoded: string | null;
@@ -217,9 +217,12 @@ export class Program {
     let logs: string[] = [];
     let computeUnitsUsed = 0;
 
+    const tx = new Transaction();
+    instructions.forEach((instruction) => tx.add(instruction));
+
     if (simulate) {
       const simulateTxResult = await this.connection.simulateTransaction(
-        new Transaction().add(instruction),
+        tx,
         signers
       );
 
@@ -241,19 +244,15 @@ export class Program {
     } else {
       let sig;
       try {
-        sig = await sendAndConfirmTransaction(
-          this.connection,
-          new Transaction().add(instruction),
-          signers,
-          {
-            skipPreflight: false,
-            commitment: 'confirmed',
-            preflightCommitment: undefined,
-          }
-        );
-      } catch {
+        sig = await sendAndConfirmTransaction(this.connection, tx, signers, {
+          skipPreflight: false,
+          commitment: 'confirmed',
+          preflightCommitment: undefined,
+        });
+      } catch (e) {
+        console.log(e);
         const simulateTxResult = await this.connection.simulateTransaction(
-          new Transaction().add(instruction),
+          tx,
           signers
         );
         logs = simulateTxResult.value.logs ?? [];

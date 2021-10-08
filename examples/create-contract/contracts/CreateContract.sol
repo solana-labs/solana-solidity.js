@@ -1,21 +1,19 @@
+contract Child {
+    constructor() {
+        print('In child constructor');
+    }
 
-contract creator {
-    child public c;
-
-    function create_child() public {
-        print("Going to create child");
-        c = new child();
-
-        c.say_hello();
+    function sayHello() public pure {
+        print('Hello there');
     }
 }
 
-contract child {
-    constructor() {
-        print("In child constructor");
-    }
+contract Creator {
+    Child public c;
 
-    function say_hello() pure public {
-        print("Hello there");
+    function createChild() public {
+        print('Going to create child');
+        c = new Child();
+        c.sayHello();
     }
 }

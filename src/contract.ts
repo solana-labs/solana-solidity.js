@@ -7,7 +7,7 @@ import {
 import { ethers } from 'ethers';
 
 import { EventCallback, parseLogTopic } from './logs';
-import { encodeSeeds, numToPaddedHex } from './utils';
+import { encodeSeeds, numToPaddedHex, createProgramAddress } from './utils';
 import { Program } from './program';
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
@@ -134,7 +134,7 @@ export class Contract {
 
     const { logs, computeUnitsUsed } = await program.makeTx(
       simulate,
-      instruction,
+      [instruction],
       signers
     );
 
@@ -250,11 +250,6 @@ export class Contract {
     ]);
 
     const keys = [
-      ...seeds.map((seed) => ({
-        pubkey: seed.address,
-        isSigner: false,
-        isWritable: true,
-      })),
       {
         pubkey: this.contractStorageAccount.publicKey,
         isSigner: false,
@@ -292,7 +287,7 @@ export class Contract {
 
     const { encoded, logs, computeUnitsUsed } = await this.program.makeTx(
       simulate,
-      instruction,
+      [instruction],
       signers
     );
 

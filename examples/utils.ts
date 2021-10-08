@@ -8,16 +8,24 @@ const DEFAULT_URL: string = 'http://localhost:8899';
 
 export async function loadContract(
   exampleDir: string,
-  constructorArgs: any[] = []
+  constructorArgs: any[] = [],
+  contractName: string | null = null
 ) {
   const programSo = fs.readFileSync(
     path.join(exampleDir, '../build/bundle.so')
   );
-  const contractFile = fs
-    .readdirSync(path.join(exampleDir, '../build'))
-    .filter((n) => !~n.search('bundle.so'))[0];
-  const contractAbi = fs.readFileSync(
-    path.join(exampleDir, `../build/${contractFile}`),
+  let abiFile = '';
+  if (contractName) {
+    abiFile = `${contractName}.abi`;
+  } else {
+    abiFile = fs
+      .readdirSync(path.join(exampleDir, '../build'))
+      .filter((n) => !~n.search('bundle.so'))[0];
+    contractName = abiFile.split('.abi')[0];
+  }
+
+  const abi = fs.readFileSync(
+    path.join(exampleDir, `../build/${abiFile}`),
     'utf-8'
   );
   const connection = getConnection();
@@ -26,8 +34,8 @@ export async function loadContract(
   const payerETHAddress = pubKeyToHex(payerAccount.publicKey);
 
   const { contract, events } = await program.deployContract({
-    name: contractFile.split('.abi')[0],
-    abi: contractAbi,
+    name: contractName,
+    abi,
     space: 8192 * 8,
     constructorArgs,
   });
@@ -38,7 +46,7 @@ export async function loadContract(
     program,
     payerETHAddress,
     contract,
-    contractAbi,
+    contractAbi: abi,
     events,
   };
 }
