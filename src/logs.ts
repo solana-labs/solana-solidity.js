@@ -5,6 +5,7 @@ const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';
 const LOG_COMPUTE_UNITS_RE = /consumed (\d+) of (\d+) compute units/i;
 const LOG_DATA_PREFIX = 'Program data: ';
+const LOG_FAILED_TO_COMPLETE_PREFIX = 'Program failed to complete: ';
 
 export class TransactionError extends Error {
   public logs: string[];
@@ -218,8 +219,12 @@ export function parseTxLogs(logs: string[]) {
     const _encoded = parseLogReturn(message);
     if (_encoded) encoded = _encoded;
 
+    // failed to complete
+    let _log = parseLogFailedToComplete(message);
+    if (_log) log = _log;
+
     // log
-    const _log = parseLogLog(message);
+    _log = parseLogLog(message);
     if (_log) log = _log;
 
     // compute units used
@@ -339,6 +344,21 @@ function parseLogComputeUnitsUsed(log: string) {
   const computeUnitsUsedMatch = log.match(LOG_COMPUTE_UNITS_RE);
   if (computeUnitsUsedMatch) {
     return Number(computeUnitsUsedMatch[1]);
+  }
+
+  return null;
+}
+
+/**
+ * Parse 'failed to complete' log e.g.:
+ *   Program failed to complete: divide by zero at instruction 592
+ *
+ * @param log
+ * @returns
+ */
+export function parseLogFailedToComplete(log: string) {
+  if (log.startsWith(LOG_FAILED_TO_COMPLETE_PREFIX)) {
+    return log.slice(LOG_FAILED_TO_COMPLETE_PREFIX.length);
   }
 
   return null;

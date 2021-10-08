@@ -19,7 +19,7 @@ describe('Errors', () => {
     } catch (_e) {
       const e = _e as TransactionError;
       expect(e.message).toBe('Do the revert thing');
-      expect(e.computeUnitsUsed).toBe(1046);
+      expect(e.computeUnitsUsed).toBe(1047);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
@@ -36,7 +36,7 @@ describe('Errors', () => {
     } catch (_e) {
       const e = _e as TransactionError;
       expect(e.message).toBe('Do the require thing');
-      expect(e.computeUnitsUsed).toBe(775);
+      expect(e.computeUnitsUsed).toBe(776);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
@@ -53,7 +53,7 @@ describe('Errors', () => {
     } catch (_e) {
       const e = _e as TransactionError;
       expect(e.message).toBe('return data or log not set');
-      expect(e.computeUnitsUsed).toBe(580);
+      expect(e.computeUnitsUsed).toBe(582);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
@@ -86,8 +86,8 @@ describe('Errors', () => {
       await contract.functions.divide(15, 0);
     } catch (_e) {
       const e = _e as TransactionError;
-      expect(e.message).toBe('divide by zero');
-      expect(e.computeUnitsUsed).toBe(775);
+      expect(e.message).toBe('divide by zero at instruction 592');
+      expect(e.computeUnitsUsed).toBe(476);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
