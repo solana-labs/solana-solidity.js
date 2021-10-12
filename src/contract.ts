@@ -78,14 +78,14 @@ export class Contract {
       simulate = false,
     } = options ?? {};
 
-    const contractStorageAccount = await program.createStorageAccount(space);
+    const storageKeyPair = await program.createStorageAccount(space);
     const abi = new ethers.utils.Interface(contractAbiData);
     const input = abi.encodeDeploy(constructorArgs);
 
     let hash = ethers.utils.keccak256(Buffer.from(contractName));
 
     const data = Buffer.concat([
-      contractStorageAccount.publicKey.toBuffer(),
+      storageKeyPair.publicKey.toBuffer(),
       caller.toBuffer(),
       Buffer.from(numToPaddedHex(value), 'hex'),
       Buffer.from(hash.substr(2, 8), 'hex'),
@@ -100,7 +100,7 @@ export class Contract {
       //   isWritable: true,
       // })),
       {
-        pubkey: contractStorageAccount.publicKey,
+        pubkey: storageKeyPair.publicKey,
         isSigner: false,
         isWritable: true,
       },
@@ -140,11 +140,7 @@ export class Contract {
       simulate
     );
 
-    const contract = new Contract(
-      program,
-      contractStorageAccount,
-      contractAbiData
-    );
+    const contract = new Contract(program, storageKeyPair, contractAbiData);
 
     const events = contract.parseLogsEvents(logs);
 
@@ -161,15 +157,15 @@ export class Contract {
    *
    * @param program
    * @param abiData
-   * @param contractStorageAccount
+   * @param storageKeyPair
    * @returns
    */
   static async get(
     program: Program,
     abiData: string,
-    contractStorageAccount: Keypair
+    storageKeyPair: Keypair
   ): Promise<Contract> {
-    return new Contract(program, contractStorageAccount, abiData);
+    return new Contract(program, storageKeyPair, abiData);
   }
 
   public abi: ethers.utils.Interface;
@@ -178,12 +174,12 @@ export class Contract {
   /**
    *
    * @param program
-   * @param contractStorageAccount
+   * @param storageKeyPair
    * @param abiData
    */
   constructor(
     public program: Program,
-    public contractStorageAccount: Keypair,
+    public storageKeyPair: Keypair,
     public abiData: string
   ) {
     this.abi = new ethers.utils.Interface(abiData);
@@ -244,7 +240,7 @@ export class Contract {
     const input = this.abi.encodeFunctionData(name, args);
 
     const data = Buffer.concat([
-      this.contractStorageAccount.publicKey.toBuffer(),
+      this.storageKeyPair.publicKey.toBuffer(),
       caller.toBuffer(),
       Buffer.from(numToPaddedHex(value), 'hex'),
       Buffer.from('00000000', 'hex'),
@@ -259,7 +255,7 @@ export class Contract {
         isWritable: true,
       })),
       {
-        pubkey: this.contractStorageAccount.publicKey,
+        pubkey: this.storageKeyPair.publicKey,
         isSigner: false,
         isWritable: true,
       },
@@ -327,7 +323,7 @@ export class Contract {
    * @returns
    */
   getStorageKeyPair(): Keypair {
-    return this.contractStorageAccount;
+    return this.storageKeyPair;
   }
 
   /**
