@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { Interface } from 'ethers/lib/utils';
 import expect from 'expect';
 
 import { parseLogTopic, parseTxError, parseTxLogs } from '../../src/logs';
@@ -13,7 +13,7 @@ describe('Logs', () => {
     ]);
     expect(computeUnitsUsed).toEqual(837);
 
-    const abi = new ethers.utils.Interface([
+    const abi = new Interface([
       {
         name: 'name',
         type: 'function',
@@ -59,7 +59,7 @@ describe('Logs', () => {
       'Program data: PUBqMYpHInIBMuX3TXZKuYGHwf1juv3K+2eNQrEUqo4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeibA== QUJDRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEyv4BIwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
     )!;
 
-    const abi = new ethers.utils.Interface([
+    const abi = new Interface([
       {
         name: 'Second',
         type: 'event',

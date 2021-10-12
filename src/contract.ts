@@ -4,7 +4,13 @@ import {
   TransactionInstruction,
   SYSVAR_CLOCK_PUBKEY,
 } from '@solana/web3.js';
-import { ethers } from 'ethers';
+import {
+  LogDescription,
+  Interface,
+  Fragment,
+  Result,
+  keccak256,
+} from 'ethers/lib/utils';
 
 import { EventCallback, parseLogTopic } from './logs';
 import { encodeSeeds, numToPaddedHex } from './utils';
@@ -42,14 +48,14 @@ export type ContractDeployResult = {
   contract: Contract;
   computeUnitsUsed: number;
   logs: string[];
-  events: ethers.utils.LogDescription[];
+  events: LogDescription[];
 };
 
 export type ContractCallResult = {
-  result: ethers.utils.Result | null;
+  result: Result | null;
   computeUnitsUsed: number;
   logs: string[];
-  events: ethers.utils.LogDescription[];
+  events: LogDescription[];
 };
 
 export class Contract {
@@ -79,10 +85,10 @@ export class Contract {
     } = options ?? {};
 
     const storageKeyPair = await program.createStorageAccount(space);
-    const abi = new ethers.utils.Interface(contractAbiData);
+    const abi = new Interface(contractAbiData);
     const input = abi.encodeDeploy(constructorArgs);
 
-    let hash = ethers.utils.keccak256(Buffer.from(contractName));
+    let hash = keccak256(Buffer.from(contractName));
 
     const data = Buffer.concat([
       storageKeyPair.publicKey.toBuffer(),
@@ -168,7 +174,7 @@ export class Contract {
     return new Contract(program, storageKeyPair, abiData);
   }
 
-  public abi: ethers.utils.Interface;
+  public abi: Interface;
   readonly functions: { [name: string]: ContractFunction };
 
   /**
@@ -182,7 +188,7 @@ export class Contract {
     public storageKeyPair: Keypair,
     public abiData: string
   ) {
-    this.abi = new ethers.utils.Interface(abiData);
+    this.abi = new Interface(abiData);
     this.functions = {};
     Object.values(this.abi.functions).forEach((frag) => {
       this.functions[frag.name] = this.buildCall(frag);
@@ -194,7 +200,7 @@ export class Contract {
    * @param fragment
    * @returns
    */
-  buildCall(fragment: ethers.utils.Fragment): ContractFunction {
+  buildCall(fragment: Fragment): ContractFunction {
     return (...args: Array<any>) => {
       const last = args[args.length - 1];
       if (args.length > fragment.inputs.length && typeof last === 'object') {
@@ -292,7 +298,7 @@ export class Contract {
     const { encoded, logs, computeUnitsUsed } =
       await this.program.sendTransaction([instruction], signers, simulate);
 
-    let result: ethers.utils.Result | null = null;
+    let result: Result | null = null;
 
     if (fragment.outputs?.length) {
       if (!encoded) {
@@ -348,8 +354,8 @@ export class Contract {
    * @param logs
    * @returns
    */
-  public parseLogsEvents(logs: string[]): ethers.utils.LogDescription[] {
-    const events: ethers.utils.LogDescription[] = [];
+  public parseLogsEvents(logs: string[]): LogDescription[] {
+    const events: LogDescription[] = [];
 
     for (const log of logs) {
       const eventData = parseLogTopic(log);

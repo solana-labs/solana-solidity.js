@@ -1,5 +1,10 @@
 import { Connection, PublicKey } from '@solana/web3.js';
-import { ethers } from 'ethers';
+import {
+  LogDescription,
+  Interface,
+  defaultAbiCoder,
+  hexDataSlice,
+} from 'ethers/lib/utils';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';
@@ -25,7 +30,7 @@ export type EventData = {
 };
 
 // Event callback.
-export type EventCallback = (event: ethers.utils.LogDescription) => void;
+export type EventCallback = (event: LogDescription) => void;
 
 // Log callback.
 export type LogCallback = (msg: string) => void;
@@ -49,7 +54,7 @@ export class LogsParser {
   /**
    * Maps event listener id to [abi, callback].
    */
-  private _eventCallbacks: Map<number, [ethers.utils.Interface, EventCallback]>;
+  private _eventCallbacks: Map<number, [Interface, EventCallback]>;
 
   /**
    * Maps log listener id to callback.
@@ -75,10 +80,7 @@ export class LogsParser {
    * @param callback
    * @returns
    */
-  public addEventListener(
-    abi: ethers.utils.Interface,
-    callback: EventCallback
-  ): number {
+  public addEventListener(abi: Interface, callback: EventCallback): number {
     let listener = this.getNewListenerId();
 
     // Store the callback into the events listeners map.
@@ -165,7 +167,7 @@ export class LogsParser {
 
           if (eventData) {
             for (const [abi, callback] of this._eventCallbacks.values()) {
-              let event: ethers.utils.LogDescription | null = null;
+              let event: LogDescription | null = null;
               try {
                 event = abi.parseLog(eventData);
               } catch (e) {
@@ -262,9 +264,9 @@ export function parseTxError(
     //   txErr = new TransactionError('signature not correct');
     // }
     else {
-      const revertReason = ethers.utils.defaultAbiCoder.decode(
+      const revertReason = defaultAbiCoder.decode(
         ['string'],
-        ethers.utils.hexDataSlice(encoded, 4)
+        hexDataSlice(encoded, 4)
       );
       // console.log(revertReason.toString(), computeUnitsUsed);
       txErr = new TransactionError(revertReason.toString());

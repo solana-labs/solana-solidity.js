@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { ethers } from 'ethers';
+import { LogDescription, parseEther } from 'ethers/lib/utils';
 import { Keypair } from '@solana/web3.js';
 
 import { Contract, Program, pubKeyToHex } from '../../../src';
@@ -7,7 +7,7 @@ import { loadContract } from '../../utils';
 
 const NAME = 'Solana';
 const SYMBOL = 'SOL';
-const TOTAL_SUPPLY = ethers.utils.parseEther('10000');
+const TOTAL_SUPPLY = parseEther('10000');
 
 describe('ERC20', () => {
   let program: Program;
@@ -51,7 +51,7 @@ describe('ERC20', () => {
 
   it('mutates contract state', async function () {
     const otherAccount = pubKeyToHex(Keypair.generate().publicKey);
-    const transferAmount = ethers.utils.parseEther('0.9');
+    const transferAmount = parseEther('0.9');
 
     await token.functions.transfer(otherAccount, transferAmount);
 
@@ -68,9 +68,9 @@ describe('ERC20', () => {
 
   it('emits events', async function () {
     const spenderAccount = pubKeyToHex(Keypair.generate().publicKey);
-    const spendAmount = ethers.utils.parseEther('0.9');
+    const spendAmount = parseEther('0.9');
 
-    const event: ethers.utils.LogDescription = await new Promise((resolve) => {
+    const event: LogDescription = await new Promise((resolve) => {
       let listenId = token.addEventListener(async (event) => {
         await token.removeEventListener(listenId);
         resolve(event);

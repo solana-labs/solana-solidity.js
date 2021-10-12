@@ -10,7 +10,7 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js';
 import crypto from 'crypto';
-import { ethers } from 'ethers';
+import { Interface } from 'ethers/lib/utils';
 import { ContractDeployResult } from 'src';
 
 import { Contract, ContractDeployOptions } from './contract';
@@ -181,10 +181,7 @@ export class Program {
    * @param callback  The function to invoke whenever the event is emitted from
    *                  program logs.
    */
-  public addEventListener(
-    abi: ethers.utils.Interface,
-    callback: EventCallback
-  ): number {
+  public addEventListener(abi: Interface, callback: EventCallback): number {
     return this.logs.addEventListener(abi, callback);
   }
 

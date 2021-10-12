@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { LogDescription } from 'ethers/lib/utils';
 import expect from 'expect';
 import { Contract } from '../../../src';
 import { loadContract } from '../../utils';
@@ -22,15 +22,13 @@ describe('Events', () => {
   });
 
   it('can be subscribed', async function () {
-    const event: ethers.utils.LogDescription = await new Promise(
-      async (resolve) => {
-        let listenId = contract.addEventListener(async (event) => {
-          await contract.removeEventListener(listenId);
-          resolve(event);
-        });
-        await contract.functions.first();
-      }
-    );
+    const event: LogDescription = await new Promise(async (resolve) => {
+      let listenId = contract.addEventListener(async (event) => {
+        await contract.removeEventListener(listenId);
+        resolve(event);
+      });
+      await contract.functions.first();
+    });
 
     expect(event.name).toEqual('First');
 
