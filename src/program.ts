@@ -228,15 +228,15 @@ export class Program {
   /**
    * Make and execute a transaction with the given `instruction` and `signers`
    *
-   * @param simulate     Whether to perform a dry-run
    * @param instruction  Solana instruction
    * @param signers      List of signers
+   * @param simulate     Whether to perform a dry-run
    * @returns            Transaction result
    */
-  public async makeTx(
-    simulate: Boolean,
+  public async sendTransaction(
     instructions: TransactionInstruction[],
-    signers: Keypair[]
+    signers: Keypair[],
+    simulate: Boolean = false
   ): Promise<{
     encoded: string | null;
     logs: string[];
@@ -284,7 +284,7 @@ export class Program {
           }
         );
       } catch (e) {
-        console.log(e);
+        // console.log(e);
         const simulateTxResult = await this.connection.simulateTransaction(
           transaction,
           signers

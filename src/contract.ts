@@ -134,10 +134,10 @@ export class Contract {
       data,
     });
 
-    const { logs, computeUnitsUsed } = await program.makeTx(
-      simulate,
+    const { logs, computeUnitsUsed } = await program.sendTransaction(
       [instruction],
-      signers
+      signers,
+      simulate
     );
 
     const contract = new Contract(
@@ -293,11 +293,8 @@ export class Contract {
 
     signers.unshift(this.program.payerAccount);
 
-    const { encoded, logs, computeUnitsUsed } = await this.program.makeTx(
-      simulate,
-      [instruction],
-      signers
-    );
+    const { encoded, logs, computeUnitsUsed } =
+      await this.program.sendTransaction([instruction], signers, simulate);
 
     let result: ethers.utils.Result | null = null;
 
