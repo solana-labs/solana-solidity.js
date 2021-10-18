@@ -23,7 +23,7 @@ import {
 } from './logs';
 
 export class Program {
-  private logs: LogsParser;
+  protected logs: LogsParser;
 
   /**
    * Load a new Solang program
@@ -125,12 +125,13 @@ export class Program {
    * @param space
    * @returns
    */
-  public async createStorageAccount(space: number): Promise<Keypair> {
+  public async createStorageAccount(
+    account: Keypair,
+    space: number
+  ): Promise<Keypair> {
     const lamports = await this.connection.getMinimumBalanceForRentExemption(
       space
     );
-
-    const account = Keypair.generate();
 
     const transaction = new Transaction().add(
       SystemProgram.createAccount({
@@ -217,7 +218,7 @@ export class Program {
    */
   public async getContract(
     abiData: string,
-    contractStorageAccount: Keypair
+    contractStorageAccount: PublicKey
   ): Promise<Contract> {
     return Contract.get(this, abiData, contractStorageAccount);
   }

@@ -39,32 +39,32 @@ export class LogsParser {
   /**
    * Program ID for event subscriptions.
    */
-  private _programId: PublicKey;
+  protected _programId: PublicKey;
 
   /**
    * Connection.
    */
-  private _connection: Connection;
+  protected _connection: Connection;
 
   /**
    * The next listener id to allocate.
    */
-  private _listenerIdCount: number;
+  protected _listenerIdCount: number;
 
   /**
    * Maps event listener id to [abi, callback].
    */
-  private _eventCallbacks: Map<number, [Interface, EventCallback]>;
+  protected _eventCallbacks: Map<number, [Interface, EventCallback]>;
 
   /**
    * Maps log listener id to callback.
    */
-  private _logCallbacks: Map<number, LogCallback>;
+  protected _logCallbacks: Map<number, LogCallback>;
 
   /**
    * The subscription id from the connection onLogs subscription.
    */
-  private _onLogsSubscriptionId: number | undefined;
+  protected _onLogsSubscriptionId: number | undefined;
 
   constructor(programId: PublicKey, connection: Connection) {
     this._programId = programId;
@@ -149,12 +149,12 @@ export class LogsParser {
     await this.stopProcessingLogs();
   }
 
-  private getNewListenerId() {
+  protected getNewListenerId() {
     this._listenerIdCount += 1;
     return this._listenerIdCount;
   }
 
-  private processLogs() {
+  protected processLogs() {
     this._onLogsSubscriptionId = this._connection.onLogs(
       this._programId,
       (logs, ctx) => {
@@ -192,7 +192,7 @@ export class LogsParser {
   /**
    *
    */
-  private async stopProcessingLogs() {
+  protected async stopProcessingLogs() {
     // Kill the websocket connection if all listeners have been removed.
     if (
       this._eventCallbacks.size == 0 &&

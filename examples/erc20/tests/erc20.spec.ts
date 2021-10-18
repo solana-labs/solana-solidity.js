@@ -14,6 +14,7 @@ describe('ERC20', () => {
   let token: Contract;
   let payerETHAddress: string;
   let contractAbi: string;
+  let tokenStorageKeyPair: Keypair;
 
   it('deploys new contract', async function () {
     this.timeout(150000);
@@ -22,6 +23,7 @@ describe('ERC20', () => {
       payerETHAddress,
       contractAbi,
       program,
+      contractStorageKeyPair: tokenStorageKeyPair,
     } = await loadContract(__dirname, [NAME, SYMBOL, TOTAL_SUPPLY]));
 
     const { result: name } = await token.functions.name();
@@ -43,7 +45,10 @@ describe('ERC20', () => {
   });
 
   it('loads existing contract', async function () {
-    token = await program.getContract(contractAbi, token.getStorageKeyPair());
+    token = await program.getContract(
+      contractAbi,
+      tokenStorageKeyPair.publicKey
+    );
 
     const { result: name } = await token.functions.name();
     expect(name).toEqual('Solana');

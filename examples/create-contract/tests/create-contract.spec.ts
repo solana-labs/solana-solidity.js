@@ -1,3 +1,4 @@
+import { Keypair, PublicKey } from '@solana/web3.js';
 import expect from 'expect';
 import { Contract, Program } from '../../../src';
 import { loadContract } from '../../utils';
@@ -5,17 +6,22 @@ import { loadContract } from '../../utils';
 describe('CreateContract', () => {
   let program: Program;
   let contract: Contract;
+  let contractStorageKeyPair: Keypair;
 
   before(async function () {
     this.timeout(150000);
-    ({ contract, program } = await loadContract(__dirname, [], 'Creator'));
+    ({ contract, program, contractStorageKeyPair } = await loadContract(
+      __dirname,
+      [],
+      'Creator'
+    ));
   });
 
   it('Creates child contract', async function () {
     const [childSeedAndAccount, { publicKey: childStorageAccount }] =
       await Promise.all([
         program.createProgramAddress(),
-        program.createStorageAccount(1024),
+        program.createStorageAccount(Keypair.generate(), 1024),
       ]);
 
     const { seed: childSeed, account: childAccount } = childSeedAndAccount!;
@@ -24,7 +30,7 @@ describe('CreateContract', () => {
       accounts: [childStorageAccount],
       writableAccounts: [contract.getProgramKey()],
       seeds: [childSeed],
-      signers: [contract.getStorageKeyPair()],
+      signers: [contractStorageKeyPair],
       programDerivedAddresses: [childAccount],
     });
 

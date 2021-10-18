@@ -26,6 +26,7 @@ export type ContractDeployOptions = {
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
   // programDerivedAddresses?: PublicKey[];
+  storageKeyPair: Keypair;
   seeds?: any[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
@@ -75,6 +76,7 @@ export class Contract {
       abi: contractAbiData,
       space,
       constructorArgs,
+      storageKeyPair,
       accounts = [],
       writableAccounts = [],
       seeds = [],
@@ -84,7 +86,8 @@ export class Contract {
       simulate = false,
     } = options ?? {};
 
-    const storageKeyPair = await program.createStorageAccount(space);
+    await program.createStorageAccount(storageKeyPair, space);
+    const storageAccount = storageKeyPair.publicKey;
     const abi = new Interface(contractAbiData);
     const input = abi.encodeDeploy(constructorArgs);
 
@@ -106,7 +109,7 @@ export class Contract {
       //   isWritable: true,
       // })),
       {
-        pubkey: storageKeyPair.publicKey,
+        pubkey: storageAccount,
         isSigner: false,
         isWritable: true,
       },
@@ -146,7 +149,7 @@ export class Contract {
       simulate
     );
 
-    const contract = new Contract(program, storageKeyPair, contractAbiData);
+    const contract = new Contract(program, storageAccount, contractAbiData);
 
     const events = contract.parseLogsEvents(logs);
 
@@ -163,15 +166,15 @@ export class Contract {
    *
    * @param program
    * @param abiData
-   * @param storageKeyPair
+   * @param storageAccount
    * @returns
    */
   static async get(
     program: Program,
     abiData: string,
-    storageKeyPair: Keypair
+    storageAccount: PublicKey
   ): Promise<Contract> {
-    return new Contract(program, storageKeyPair, abiData);
+    return new Contract(program, storageAccount, abiData);
   }
 
   public abi: Interface;
@@ -180,12 +183,12 @@ export class Contract {
   /**
    *
    * @param program
-   * @param storageKeyPair
+   * @param storageAccount
    * @param abiData
    */
   constructor(
     public program: Program,
-    public storageKeyPair: Keypair,
+    public storageAccount: PublicKey,
     public abiData: string
   ) {
     this.abi = new Interface(abiData);
@@ -226,7 +229,7 @@ export class Contract {
    * @param caller
    * @returns
    */
-  private async call(
+  protected async call(
     name: string,
     args: any[],
     options?: ContractTransactionOptions
@@ -246,7 +249,7 @@ export class Contract {
     const input = this.abi.encodeFunctionData(name, args);
 
     const data = Buffer.concat([
-      this.storageKeyPair.publicKey.toBuffer(),
+      this.storageAccount.toBuffer(),
       caller.toBuffer(),
       Buffer.from(numToPaddedHex(value), 'hex'),
       Buffer.from('00000000', 'hex'),
@@ -261,7 +264,7 @@ export class Contract {
         isWritable: true,
       })),
       {
-        pubkey: this.storageKeyPair.publicKey,
+        pubkey: this.storageAccount,
         isSigner: false,
         isWritable: true,
       },
@@ -322,14 +325,6 @@ export class Contract {
    */
   getProgramKey(): PublicKey {
     return this.program.programAccount.publicKey;
-  }
-
-  /**
-   *
-   * @returns
-   */
-  getStorageKeyPair(): Keypair {
-    return this.storageKeyPair;
   }
 
   /**

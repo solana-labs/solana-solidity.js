@@ -33,10 +33,12 @@ export async function loadContract(
   const program = await Program.deploy(connection, payerAccount, programSo);
   const payerETHAddress = pubKeyToHex(payerAccount.publicKey);
 
+  const storageKeyPair = Keypair.generate();
   const { contract, events } = await program.deployContract({
     name: contractName,
     abi,
     space: 8192 * 8,
+    storageKeyPair,
     constructorArgs,
   });
 
@@ -47,6 +49,7 @@ export async function loadContract(
     payerETHAddress,
     contract,
     contractAbi: abi,
+    contractStorageKeyPair: storageKeyPair,
     events,
   };
 }
