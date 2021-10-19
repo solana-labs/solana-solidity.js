@@ -26,34 +26,8 @@ export class Program {
   protected logs: LogsParser;
 
   /**
-   * Load a new Solang program
    *
-   * @param connection    Solana connection
-   * @param payerAccount  Payer pubkey
-   * @param so            Solang program build bundle
-   * @returns             The program
-   */
-  static async deploy(
-    connection: Connection,
-    payerAccount: Keypair,
-    so: Buffer
-  ): Promise<Program> {
-    const programAccount = Keypair.generate();
-
-    await BpfLoader.load(
-      connection,
-      payerAccount,
-      programAccount,
-      so,
-      BPF_LOADER_PROGRAM_ID
-    );
-
-    return new Program(connection, payerAccount, programAccount);
-  }
-
-  /**
-   *
-   * Load a deployed Solang program
+   * Load a Solang program
    *
    * @param connection      Solana connection
    * @param payerAccount    Payer pubkey
@@ -61,7 +35,7 @@ export class Program {
    * @param so              Solang program build bundle
    * @returns               The program
    */
-  static async get(
+  static async load(
     connection: Connection,
     payerAccount: Keypair,
     programAccount: Keypair,
@@ -79,6 +53,7 @@ export class Program {
   }
 
   /**
+   * Create an instance representing a Solang program
    *
    * @param connection      Solana connection
    * @param payerAccount    Payer pubkey

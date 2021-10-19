@@ -30,7 +30,12 @@ export async function loadContract(
   );
   const connection = getConnection();
   const payerAccount = await newAccountWithLamports(connection);
-  const program = await Program.deploy(connection, payerAccount, programSo);
+  const program = await Program.load(
+    connection,
+    payerAccount,
+    Keypair.generate(),
+    programSo
+  );
   const payerETHAddress = pubKeyToHex(payerAccount.publicKey);
 
   const storageKeyPair = Keypair.generate();

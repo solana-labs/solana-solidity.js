@@ -65,7 +65,12 @@ async function main() {
 
   // load program
   console.log('deploying the solang program');
-  const program = await Program.deploy(connection, payerAccount, PROGRAM_SO);
+  const program = await Program.load(
+    connection,
+    payerAccount,
+    Keypair.generate(),
+    PROGRAM_SO
+  );
 
   // deploy new contract
   console.log('deploying the erc20 contract to the program');
