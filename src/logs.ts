@@ -268,7 +268,6 @@ export function parseTxError(
         ['string'],
         hexDataSlice(encoded, 4)
       );
-      // console.log(revertReason.toString(), computeUnitsUsed);
       txErr = new TransactionError(revertReason.toString());
     }
   }

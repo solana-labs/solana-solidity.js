@@ -80,7 +80,6 @@ export async function newAccountWithLamports(
     if (--retries <= 0) {
       break;
     }
-    // console.log('airdrop retry ' + retries);
   }
   throw new Error(`airdrop of ${lamports} failed`);
 }

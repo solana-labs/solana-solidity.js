@@ -217,14 +217,10 @@ export class Program {
     signers: Keypair[],
     simulate: Boolean = false
   ): Promise<{
-    encoded: string | null;
+    encoded: Buffer | null;
     logs: string[];
     computeUnitsUsed: number;
   }> {
-    let encoded;
-    let logs: string[] = [];
-    let computeUnitsUsed = 0;
-
     const transaction = new Transaction();
     instructions.forEach((instruction) => transaction.add(instruction));
 
@@ -233,13 +229,10 @@ export class Program {
         transaction,
         signers
       );
-
-      logs = simulateTxResult.value.logs ?? [];
-      // console.log(logs);
-
+      const logs = simulateTxResult.value.logs ?? [];
       const parseTxLogsResult = parseTxLogs(logs);
-      encoded = parseTxLogsResult.encoded;
-      computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
+      const encoded = parseTxLogsResult.encoded;
+      const computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
 
       if (simulateTxResult.value.err) {
         throw parseTxError(
@@ -249,49 +242,47 @@ export class Program {
           logs
         );
       }
-    } else {
-      let sig;
-      try {
-        sig = await sendAndConfirmTransaction(
-          this.connection,
-          transaction,
-          signers,
-          {
-            skipPreflight: false,
-            commitment: 'confirmed',
-            preflightCommitment: undefined,
-          }
-        );
-      } catch (e) {
-        // console.log(e);
-        const simulateTxResult = await this.connection.simulateTransaction(
-          transaction,
-          signers
-        );
-        logs = simulateTxResult.value.logs ?? [];
-        // console.log(logs);
 
-        if (!simulateTxResult.value.err) {
-          throw new Error('error is not falsy');
+      return { encoded, logs, computeUnitsUsed };
+    }
+
+    let sig;
+    try {
+      sig = await sendAndConfirmTransaction(
+        this.connection,
+        transaction,
+        signers,
+        {
+          skipPreflight: false,
+          commitment: 'confirmed',
+          preflightCommitment: undefined,
         }
+      );
+    } catch (e) {
+      const simulateTxResult = await this.connection.simulateTransaction(
+        transaction,
+        signers
+      );
+      const logs = simulateTxResult.value.logs ?? [];
 
-        const parseTxLogsResult = parseTxLogs(logs);
-        throw parseTxError(
-          parseTxLogsResult.encoded,
-          parseTxLogsResult.computeUnitsUsed,
-          parseTxLogsResult.log,
-          logs
-        );
+      if (!simulateTxResult.value.err) {
+        throw new Error('error is not falsy');
       }
 
-      const parsedTx = await this.connection.getParsedConfirmedTransaction(sig);
-      logs = parsedTx!.meta?.logMessages ?? [];
-      // console.log(logs);
-
       const parseTxLogsResult = parseTxLogs(logs);
-      encoded = parseTxLogsResult.encoded;
-      computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
+      throw parseTxError(
+        parseTxLogsResult.encoded,
+        parseTxLogsResult.computeUnitsUsed,
+        parseTxLogsResult.log,
+        logs
+      );
     }
+
+    const parsedTx = await this.connection.getParsedConfirmedTransaction(sig);
+    const logs = parsedTx!.meta?.logMessages ?? [];
+    const parseTxLogsResult = parseTxLogs(logs);
+    const encoded = parseTxLogsResult.encoded;
+    const computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
 
     return { encoded, logs, computeUnitsUsed };
   }
