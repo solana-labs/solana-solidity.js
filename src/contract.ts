@@ -60,6 +60,10 @@ export type ContractCallResult = {
 };
 
 export class Contract {
+  public program: Program;
+  public storageAccount: PublicKey;
+  public abiData: string;
+
   /**
    * Deploy a new contract to a loaded Solang program
    *
@@ -186,12 +190,11 @@ export class Contract {
    * @param storageAccount
    * @param abiData
    */
-  constructor(
-    public program: Program,
-    public storageAccount: PublicKey,
-    public abiData: string
-  ) {
-    this.abi = new Interface(abiData);
+  constructor(_program: Program, _storageAccount: PublicKey, _abiData: string) {
+    this.program = _program;
+    this.storageAccount = _storageAccount;
+    this.abiData = _abiData;
+    this.abi = new Interface(_abiData);
     this.functions = {};
     Object.values(this.abi.functions).forEach((frag) => {
       this.functions[frag.name] = this.buildCall(frag);

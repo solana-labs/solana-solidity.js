@@ -23,6 +23,9 @@ import {
 } from './logs';
 
 export class Program {
+  public connection: Connection;
+  public payerAccount: Keypair;
+  public programAccount: Keypair;
   protected logs: LogsParser;
 
   /**
@@ -60,10 +63,13 @@ export class Program {
    * @param programAccount  The program's pubkey
    */
   constructor(
-    public connection: Connection,
-    public payerAccount: Keypair,
-    public programAccount: Keypair
+    _connection: Connection,
+    _payerAccount: Keypair,
+    _programAccount: Keypair
   ) {
+    this.connection = _connection;
+    this.payerAccount = _payerAccount;
+    this.programAccount = _programAccount;
     this.logs = new LogsParser(this.programAccount.publicKey, this.connection);
   }
 
