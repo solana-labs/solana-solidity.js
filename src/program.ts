@@ -10,7 +10,7 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js';
 import crypto from 'crypto';
-import { Interface } from 'ethers/lib/utils';
+import { Interface } from '@ethersproject/abi';
 import { ContractDeployResult } from 'src';
 
 import { Contract, ContractDeployOptions } from './contract';

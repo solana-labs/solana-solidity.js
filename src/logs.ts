@@ -1,10 +1,6 @@
 import { Connection, PublicKey } from '@solana/web3.js';
-import {
-  LogDescription,
-  Interface,
-  defaultAbiCoder,
-  hexDataSlice,
-} from 'ethers/lib/utils';
+import { LogDescription, Interface, defaultAbiCoder } from '@ethersproject/abi';
+import { hexDataSlice } from '@ethersproject/bytes';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';

@@ -1,4 +1,4 @@
-import { Interface } from 'ethers/lib/utils';
+import { Interface } from '@ethersproject/abi';
 import expect from 'expect';
 
 import { parseLogTopic, parseTxError, parseTxLogs } from '../../src/logs';

@@ -9,8 +9,8 @@ import {
   Interface,
   Fragment,
   Result,
-  keccak256,
-} from 'ethers/lib/utils';
+} from '@ethersproject/abi';
+import { keccak256 } from '@ethersproject/keccak256';
 
 import { EventCallback, parseLogTopic } from './logs';
 import { encodeSeeds, numToPaddedHex } from './utils';

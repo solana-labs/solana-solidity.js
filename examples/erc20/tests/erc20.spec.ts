@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { LogDescription, parseEther } from 'ethers/lib/utils';
+import { LogDescription } from '@ethersproject/abi';
 import { Keypair } from '@solana/web3.js';
 
 import { Contract, Program, pubKeyToHex } from '../../../src';
@@ -7,7 +7,7 @@ import { loadContract } from '../../utils';
 
 const NAME = 'Solana';
 const SYMBOL = 'SOL';
-const TOTAL_SUPPLY = parseEther('10000');
+const TOTAL_SUPPLY = 10000;
 
 describe('ERC20', () => {
   let program: Program;
@@ -36,12 +36,12 @@ describe('ERC20', () => {
     expect(decimals).toEqual(18);
 
     const { result: supply } = await token.functions.totalSupply();
-    expect(supply).toEqual(TOTAL_SUPPLY);
+    expect(supply.toString()).toEqual(TOTAL_SUPPLY.toString());
 
     const { result: balance } = await token.functions.balanceOf(
       payerETHAddress
     );
-    expect(balance).toEqual(TOTAL_SUPPLY);
+    expect(balance.toString()).toEqual(TOTAL_SUPPLY.toString());
   });
 
   it('loads existing contract', async function () {
@@ -56,24 +56,26 @@ describe('ERC20', () => {
 
   it('mutates contract state', async function () {
     const otherAccount = pubKeyToHex(Keypair.generate().publicKey);
-    const transferAmount = parseEther('0.9');
+    const transferAmount = 9;
 
     await token.functions.transfer(otherAccount, transferAmount);
 
     const { result: otherAccountBalance } = await token.functions.balanceOf(
       otherAccount
     );
-    expect(otherAccountBalance).toEqual(transferAmount);
+    expect(otherAccountBalance.toString()).toEqual(transferAmount.toString());
 
     const { result: payerBalance } = await token.functions.balanceOf(
       payerETHAddress
     );
-    expect(payerBalance).toEqual(TOTAL_SUPPLY.sub(transferAmount));
+    expect(payerBalance.toString()).toEqual(
+      (TOTAL_SUPPLY - transferAmount).toString()
+    );
   });
 
   it('emits events', async function () {
     const spenderAccount = pubKeyToHex(Keypair.generate().publicKey);
-    const spendAmount = parseEther('0.9');
+    const spendAmount = 9;
 
     const event: LogDescription = await new Promise((resolve) => {
       let listenId = token.addEventListener(async (event) => {
@@ -86,7 +88,7 @@ describe('ERC20', () => {
     expect(event.name).toEqual('Approval');
     const [owner, spender, value] = event.args;
     expect(owner).toEqual(payerETHAddress);
-    expect(spender).toEqual(spenderAccount);
+    expect(spender.toString()).toEqual(spenderAccount.toString());
     expect(value.eq(spendAmount)).toBeTruthy;
   });
 });
