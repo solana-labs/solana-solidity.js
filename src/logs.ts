@@ -62,6 +62,12 @@ export class LogsParser {
    */
   protected _onLogsSubscriptionId: number | undefined;
 
+  /**
+   * Creates a new instance of LogsParser
+   * 
+   * @param programId 
+   * @param connection 
+   */
   constructor(programId: PublicKey, connection: Connection) {
     this._programId = programId;
     this._connection = connection;
@@ -71,10 +77,11 @@ export class LogsParser {
   }
 
   /**
-   *
-   * @param abi
-   * @param callback
-   * @returns
+   * Subscribe to events of `abi`, invoking `callback` on every emit
+   * 
+   * @param abi       The contract ABI
+   * @param callback  Callback to invoke
+   * @returns         Listener id
    */
   public addEventListener(abi: Interface, callback: EventCallback): number {
     let listener = this.getNewListenerId();
@@ -93,8 +100,9 @@ export class LogsParser {
   }
 
   /**
-   *
-   * @param listener
+   * Unsubscribe events listener of id `listener`.
+   * 
+   * @param listener Listener id
    */
   public async removeEventListener(listener: number): Promise<void> {
     // Get the callback.
@@ -109,9 +117,10 @@ export class LogsParser {
   }
 
   /**
-   *
-   * @param callback
-   * @returns
+   * Subscribe to program logs, invoking `callback` on every emit
+   * 
+   * @param callback  Callback to invoke
+   * @returns         Listener id
    */
   public addLogListener(callback: LogCallback): number {
     let listener = this.getNewListenerId();
@@ -130,8 +139,9 @@ export class LogsParser {
   }
 
   /**
-   *
-   * @param listener
+   * Unsubscribe logs listener of id `listener`
+   * 
+   * @param listener - Listener id
    */
   public async removeLogListener(listener: number): Promise<void> {
     // Get the callback.
@@ -145,11 +155,19 @@ export class LogsParser {
     await this.stopProcessingLogs();
   }
 
+  /**
+   * Generate new listener id
+   * 
+   * @returns Listener id
+   */
   protected getNewListenerId() {
     this._listenerIdCount += 1;
     return this._listenerIdCount;
   }
 
+  /**
+   * Create an events + logs listener and parser singleton
+   */
   protected processLogs() {
     this._onLogsSubscriptionId = this._connection.onLogs(
       this._programId,
@@ -186,10 +204,9 @@ export class LogsParser {
   }
 
   /**
-   *
+   * Kill the websocket connection if all listeners have been removed
    */
   protected async stopProcessingLogs() {
-    // Kill the websocket connection if all listeners have been removed.
     if (
       this._eventCallbacks.size == 0 &&
       this._logCallbacks.size == 0 &&
@@ -202,7 +219,7 @@ export class LogsParser {
 }
 
 /**
- * Parse tx `logs` for any "return" data, "log" or compute units used.
+ * Parse tx `logs` for any "return" data, "log" or compute units used
  *
  * @param logs
  * @returns
@@ -234,7 +251,7 @@ export function parseTxLogs(logs: string[]) {
 }
 
 /**
- * Parse tx error in log `encoded` text. Also retrieve compute units used.
+ * Parse tx error in log `encoded` text. Also retrieve compute units used
  *
  * @param encoded
  * @param computeUnitsUsed

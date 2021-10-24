@@ -16,7 +16,7 @@ docker pull hyperledgerlabs/solang:latest
 docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
 ```
 
-4. In a new tab, initialize your project:
+4. In a new tab, initialize the project:
 
 ```
 mkdir -p project/contracts project/build

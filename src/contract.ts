@@ -185,7 +185,8 @@ export class Contract {
   readonly functions: { [name: string]: ContractFunction };
 
   /**
-   *
+   * Creates a new instance of Contract
+   * 
    * @param program
    * @param storageAccount
    * @param abiData
@@ -202,7 +203,8 @@ export class Contract {
   }
 
   /**
-   *
+   * Generate contract method for `fragment` of type "function"
+   * 
    * @param fragment
    * @returns
    */
@@ -222,14 +224,11 @@ export class Contract {
   }
 
   /**
-   *
+   * Invoke contract method `name` with `args` as it's arguments
+   * 
    * @param name
-   * @param params
-   * @param accounts
-   * @param writableAccounts
-   * @param seeds
-   * @param signers
-   * @param caller
+   * @param args
+   * @param options
    * @returns
    */
   protected async call(
@@ -323,15 +322,16 @@ export class Contract {
   }
 
   /**
-   *
-   * @returns
+   * Return the programs's account public key
+   * 
+   * @returns PublicKey
    */
   getProgramKey(): PublicKey {
     return this.program.programAccount.publicKey;
   }
 
   /**
-   * Invokes the given callback every time the given event is emitted.
+   * Invokes the given callback every time the given event is emitted
    *
    * @param callback  The function to invoke whenever the event is emitted from
    *                  program logs.
@@ -348,9 +348,10 @@ export class Contract {
   }
 
   /**
-   *
-   * @param logs
-   * @returns
+   * Parse event `logs` for any events emitted
+   * 
+   * @param logs  Array of log strings
+   * @returns     Decoded event data
    */
   public parseLogsEvents(logs: string[]): LogDescription[] {
     const events: LogDescription[] = [];
