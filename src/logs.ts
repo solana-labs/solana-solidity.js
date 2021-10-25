@@ -64,9 +64,9 @@ export class LogsParser {
 
   /**
    * Creates a new instance of LogsParser
-   * 
-   * @param programId 
-   * @param connection 
+   *
+   * @param programId
+   * @param connection
    */
   constructor(programId: PublicKey, connection: Connection) {
     this._programId = programId;
@@ -78,7 +78,7 @@ export class LogsParser {
 
   /**
    * Subscribe to events of `abi`, invoking `callback` on every emit
-   * 
+   *
    * @param abi       The contract ABI
    * @param callback  Callback to invoke
    * @returns         Listener id
@@ -101,7 +101,7 @@ export class LogsParser {
 
   /**
    * Unsubscribe events listener of id `listener`.
-   * 
+   *
    * @param listener Listener id
    */
   public async removeEventListener(listener: number): Promise<void> {
@@ -118,7 +118,7 @@ export class LogsParser {
 
   /**
    * Subscribe to program logs, invoking `callback` on every emit
-   * 
+   *
    * @param callback  Callback to invoke
    * @returns         Listener id
    */
@@ -139,8 +139,8 @@ export class LogsParser {
   }
 
   /**
-   * Unsubscribe logs listener of id `listener`
-   * 
+   * Unsubscribe a logs listener of id `listener`
+   *
    * @param listener - Listener id
    */
   public async removeLogListener(listener: number): Promise<void> {
@@ -156,8 +156,8 @@ export class LogsParser {
   }
 
   /**
-   * Generate new listener id
-   * 
+   * Generate a new listener id
+   *
    * @returns Listener id
    */
   protected getNewListenerId() {
@@ -204,7 +204,7 @@ export class LogsParser {
   }
 
   /**
-   * Kill the websocket connection if all listeners have been removed
+   * Stop processing logs, killing the websocket connection if all listeners have been removed
    */
   protected async stopProcessingLogs() {
     if (
@@ -219,7 +219,10 @@ export class LogsParser {
 }
 
 /**
- * Parse tx `logs` for any "return" data, "log" or compute units used
+ * Parse tx `logs` for any:
+ *  - "return" data
+ *  - encoded log
+ *  - compute units used
  *
  * @param logs
  * @returns
@@ -247,7 +250,7 @@ export function parseTxLogs(logs: string[]) {
     if (_computeUnitsUsed) computeUnitsUsed = _computeUnitsUsed;
   }
 
-  return { encoded, computeUnitsUsed, log };
+  return { encoded, computeUnitsUsed, log }; // todo: better naming
 }
 
 /**

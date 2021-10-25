@@ -27,7 +27,7 @@ export type ContractDeployOptions = {
   writableAccounts?: PublicKey[];
   // programDerivedAddresses?: PublicKey[];
   storageKeyPair: Keypair;
-  seeds?: any[];
+  seeds?: Buffer[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   value?: number;
@@ -38,7 +38,7 @@ export type ContractTransactionOptions = {
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
   programDerivedAddresses?: PublicKey[];
-  seeds?: any[];
+  seeds?: Buffer[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   value?: number;
@@ -149,7 +149,8 @@ export class Contract {
 
     const { logs, computeUnitsUsed } = await (simulate
       ? program.simulateTransaction
-      : program.sendAndConfirmTransaction)([instruction], signers);
+      : program.sendAndConfirmTransaction
+    ).call(program, [instruction], signers);
 
     const contract = new Contract(program, storageAccount, contractAbiData);
 
@@ -300,7 +301,8 @@ export class Contract {
 
     const { encoded, logs, computeUnitsUsed } = await (simulate
       ? this.program.simulateTransaction
-      : this.program.sendAndConfirmTransaction)([instruction], signers);
+      : this.program.sendAndConfirmTransaction
+    ).call(this.program, [instruction], signers);
 
     let result: Result | null = null;
 
