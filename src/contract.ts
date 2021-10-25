@@ -147,11 +147,9 @@ export class Contract {
       data,
     });
 
-    const { logs, computeUnitsUsed } = await program.sendTransaction(
-      [instruction],
-      signers,
-      simulate
-    );
+    const { logs, computeUnitsUsed } = await (simulate
+      ? program.simulateTransaction
+      : program.sendAndConfirmTransaction)([instruction], signers);
 
     const contract = new Contract(program, storageAccount, contractAbiData);
 
@@ -186,7 +184,7 @@ export class Contract {
 
   /**
    * Creates a new instance of Contract
-   * 
+   *
    * @param program
    * @param storageAccount
    * @param abiData
@@ -204,7 +202,7 @@ export class Contract {
 
   /**
    * Generate contract method for `fragment` of type "function"
-   * 
+   *
    * @param fragment
    * @returns
    */
@@ -225,7 +223,7 @@ export class Contract {
 
   /**
    * Invoke contract method `name` with `args` as it's arguments
-   * 
+   *
    * @param name
    * @param args
    * @param options
@@ -300,8 +298,9 @@ export class Contract {
 
     signers.unshift(this.program.payerAccount);
 
-    const { encoded, logs, computeUnitsUsed } =
-      await this.program.sendTransaction([instruction], signers, simulate);
+    const { encoded, logs, computeUnitsUsed } = await (simulate
+      ? this.program.simulateTransaction
+      : this.program.sendAndConfirmTransaction)([instruction], signers);
 
     let result: Result | null = null;
 
@@ -323,7 +322,7 @@ export class Contract {
 
   /**
    * Return the programs's account public key
-   * 
+   *
    * @returns PublicKey
    */
   getProgramKey(): PublicKey {
@@ -349,7 +348,7 @@ export class Contract {
 
   /**
    * Parse event `logs` for any events emitted
-   * 
+   *
    * @param logs  Array of log strings
    * @returns     Decoded event data
    */

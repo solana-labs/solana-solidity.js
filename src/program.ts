@@ -205,46 +205,21 @@ export class Program {
   }
 
   /**
-   * Make and execute a transaction with the given `instruction` and `signers`
+   * Make and execute a transaction with the given `instructions` and `signers`
    *
-   * @param instruction  Solana instruction
-   * @param signers      List of signers
-   * @param simulate     Whether to perform a dry-run
-   * @returns            Transaction result
+   * @param instructions  Solana instructions
+   * @param signers       List of signers
+   * @returns             Transaction result
    */
-  public async sendTransaction(
+  public async sendAndConfirmTransaction(
     instructions: TransactionInstruction[],
-    signers: Keypair[],
-    simulate: Boolean = false
+    signers: Keypair[]
   ): Promise<{
     encoded: Buffer | null;
     logs: string[];
     computeUnitsUsed: number;
   }> {
-    const transaction = new Transaction();
-    instructions.forEach((instruction) => transaction.add(instruction));
-
-    if (simulate) {
-      const simulateTxResult = await this.connection.simulateTransaction(
-        transaction,
-        signers
-      );
-      const logs = simulateTxResult.value.logs ?? [];
-      const parseTxLogsResult = parseTxLogs(logs);
-      const encoded = parseTxLogsResult.encoded;
-      const computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
-
-      if (simulateTxResult.value.err) {
-        throw parseTxError(
-          encoded,
-          computeUnitsUsed,
-          parseTxLogsResult.log,
-          logs
-        );
-      }
-
-      return { encoded, logs, computeUnitsUsed };
-    }
+    const transaction = new Transaction().add(...instructions);
 
     let sig;
     try {
@@ -283,6 +258,44 @@ export class Program {
     const parseTxLogsResult = parseTxLogs(logs);
     const encoded = parseTxLogsResult.encoded;
     const computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
+
+    return { encoded, logs, computeUnitsUsed };
+  }
+
+  /**
+   * Simulate a transaction containing the given `instructions` and `signers`
+   *
+   * @param instructions  Solana instructions
+   * @param signers       List of signers
+   * @returns             Transaction result
+   */
+  public async simulateTransaction(
+    instructions: TransactionInstruction[],
+    signers: Keypair[]
+  ): Promise<{
+    encoded: Buffer | null;
+    logs: string[];
+    computeUnitsUsed: number;
+  }> {
+    const transaction = new Transaction().add(...instructions);
+
+    const simulateTxResult = await this.connection.simulateTransaction(
+      transaction,
+      signers
+    );
+    const logs = simulateTxResult.value.logs ?? [];
+    const parseTxLogsResult = parseTxLogs(logs);
+    const encoded = parseTxLogsResult.encoded;
+    const computeUnitsUsed = parseTxLogsResult.computeUnitsUsed;
+
+    if (simulateTxResult.value.err) {
+      throw parseTxError(
+        encoded,
+        computeUnitsUsed,
+        parseTxLogsResult.log,
+        logs
+      );
+    }
 
     return { encoded, logs, computeUnitsUsed };
   }
