@@ -8,6 +8,7 @@ import {
   Transaction,
   sendAndConfirmTransaction,
   TransactionInstruction,
+  ConfirmOptions,
 } from '@solana/web3.js';
 import crypto from 'crypto';
 import { Interface } from '@ethersproject/abi';
@@ -108,7 +109,8 @@ export class Program {
    */
   public async createStorageAccount(
     account: Keypair,
-    space: number
+    space: number,
+    confirmOptions?: ConfirmOptions
   ): Promise<Keypair> {
     const lamports = await this.connection.getMinimumBalanceForRentExemption(
       space
@@ -128,7 +130,7 @@ export class Program {
       this.connection,
       transaction,
       [this.payerAccount, account],
-      {
+      confirmOptions ?? {
         skipPreflight: false,
         commitment: 'confirmed',
         preflightCommitment: undefined,
@@ -213,7 +215,8 @@ export class Program {
    */
   public async sendAndConfirmTransaction(
     instructions: TransactionInstruction[],
-    signers: Keypair[]
+    signers: Keypair[],
+    confirmOptions?: ConfirmOptions
   ): Promise<{
     encoded: Buffer | null;
     logs: string[];
@@ -227,7 +230,7 @@ export class Program {
         this.connection,
         transaction,
         signers,
-        {
+        confirmOptions ?? {
           skipPreflight: false,
           commitment: 'confirmed',
           preflightCommitment: undefined,
