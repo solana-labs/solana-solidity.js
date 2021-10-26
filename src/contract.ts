@@ -98,12 +98,12 @@ export class Contract {
     let hash = keccak256(Buffer.from(contractName));
 
     const data = Buffer.concat([
-      storageKeyPair.publicKey.toBuffer(),
-      caller.toBuffer(),
-      Buffer.from(numToPaddedHex(value), 'hex'),
-      Buffer.from(hash.substr(2, 8), 'hex'),
-      encodeSeeds(seeds),
-      Buffer.from(input.replace('0x', ''), 'hex'),
+      storageKeyPair.publicKey.toBuffer(), //           contract
+      caller.toBuffer(), //                             sender
+      Buffer.from(numToPaddedHex(value), 'hex'), //     value
+      Buffer.from(hash.substr(2, 8), 'hex'), //         hash
+      encodeSeeds(seeds), //                            seeds
+      Buffer.from(input.replace('0x', ''), 'hex'), //   input
     ]);
 
     const keys = [
@@ -250,12 +250,12 @@ export class Contract {
     const input = this.abi.encodeFunctionData(name, args);
 
     const data = Buffer.concat([
-      this.storageAccount.toBuffer(),
-      caller.toBuffer(),
-      Buffer.from(numToPaddedHex(value), 'hex'),
-      Buffer.from('00000000', 'hex'),
-      encodeSeeds(seeds),
-      Buffer.from(input.replace('0x', ''), 'hex'),
+      this.storageAccount.toBuffer(), //                contract
+      caller.toBuffer(), //                             sender
+      Buffer.from(numToPaddedHex(value), 'hex'), //     value
+      Buffer.from('00000000', 'hex'), //                hash
+      encodeSeeds(seeds), //                            seeds
+      Buffer.from(input.replace('0x', ''), 'hex'), //   input
     ]);
 
     const keys = [
