@@ -13,7 +13,7 @@ import {
 import { keccak256 } from '@ethersproject/keccak256';
 
 import { EventCallback, parseLogTopic } from './logs';
-import { encodeSeeds, numToPaddedHex } from './utils';
+import { numToPaddedHex } from './utils';
 import { Program } from './program';
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
@@ -27,7 +27,7 @@ export type ContractDeployOptions = {
   writableAccounts?: PublicKey[];
   // programDerivedAddresses?: PublicKey[];
   storageKeyPair: Keypair;
-  seeds?: Buffer[];
+  seeds?: Buffer;
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   value?: number;
@@ -38,7 +38,7 @@ export type ContractTransactionOptions = {
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
   programDerivedAddresses?: PublicKey[];
-  seeds?: Buffer[];
+  seeds?: Buffer;
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   value?: number;
@@ -83,7 +83,7 @@ export class Contract {
       storageKeyPair,
       accounts = [],
       writableAccounts = [],
-      seeds = [],
+      seeds = Buffer.from('00', 'hex'),
       signers = [],
       caller = program.payerAccount.publicKey,
       value = 0,
@@ -102,7 +102,7 @@ export class Contract {
       caller.toBuffer(), //                             sender
       Buffer.from(numToPaddedHex(value), 'hex'), //     value
       Buffer.from(hash.substr(2, 8), 'hex'), //         hash
-      encodeSeeds(seeds), //                            seeds
+      seeds, //                                         seeds
       Buffer.from(input.replace('0x', ''), 'hex'), //   input
     ]);
 
@@ -239,7 +239,7 @@ export class Contract {
       accounts = [],
       writableAccounts = [],
       programDerivedAddresses = [],
-      seeds = [],
+      seeds = Buffer.from('00', 'hex'),
       signers = [],
       caller = this.program.payerAccount.publicKey,
       value = 0,
@@ -254,7 +254,7 @@ export class Contract {
       caller.toBuffer(), //                             sender
       Buffer.from(numToPaddedHex(value), 'hex'), //     value
       Buffer.from('00000000', 'hex'), //                hash
-      encodeSeeds(seeds), //                            seeds
+      seeds, //                                         seeds
       Buffer.from(input.replace('0x', ''), 'hex'), //   input
     ]);
 

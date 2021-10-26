@@ -1,7 +1,7 @@
 import { Keypair, PublicKey } from '@solana/web3.js';
 import expect from 'expect';
 import { Contract, Program } from '../../../src';
-import { loadContract } from '../../utils';
+import { encodeSeeds, loadContract } from '../../utils';
 
 describe('CreateContract', () => {
   let program: Program;
@@ -29,7 +29,7 @@ describe('CreateContract', () => {
     const { logs } = await contract.functions.createChild({
       accounts: [childStorageAccount],
       writableAccounts: [contract.getProgramKey()],
-      seeds: [childSeed],
+      seeds: encodeSeeds([childSeed]),
       signers: [contractStorageKeyPair],
       programDerivedAddresses: [childAccount],
     });
