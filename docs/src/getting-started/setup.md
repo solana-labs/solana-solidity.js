@@ -7,7 +7,7 @@ This is a short guide into deploying and interacting with the standard [ERC20](h
 
 ```
 docker pull solanalabs/solana:edge
-docker pull hyperledgerlabs/solang:latest
+docker pull ghcr.io/hyperledger-labs/solang:latest
 ```
 
 3. Start the test validator:
@@ -27,7 +27,7 @@ curl -o contracts/ERC20.sol https://raw.githubusercontent.com/vbstreetz/solana-s
 5. Compile the Solidity contract:
 
 ```
-docker run --rm -it -v $PWD:/project --entrypoint /bin/bash hyperledgerlabs/solang -c "solang /project/contracts/ERC20.sol -o /project/build --target solana -v"
+docker run --rm -it -v $PWD:/project --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /project/contracts/ERC20.sol -o /project/build --target solana -v"
 ```
 
 This outputs `*.abi` and `bundle.so` files in a `build` folder.

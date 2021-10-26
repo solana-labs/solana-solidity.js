@@ -52,7 +52,7 @@ describe('Errors', () => {
       await contract.functions.doAssert(true);
     } catch (_e) {
       const e = _e as TransactionError;
-      expect(e.message).toBe('return data or log not set');
+      expect(e.message).toBe('custom program error: 0x0');
       expect(e.computeUnitsUsed).toBe(582);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
@@ -88,6 +88,25 @@ describe('Errors', () => {
       const e = _e as TransactionError;
       expect(e.message).toBe('divide by zero at instruction 592');
       expect(e.computeUnitsUsed).toBe(476);
+      expect(e.logs.length).toBeGreaterThan(1);
+      return;
+    }
+
+    throw new Error('does not throw');
+  });
+});
+
+
+describe('Errors', () => {
+  it('deploy with not enough space', async function () {
+    this.timeout(150000);
+
+    try {
+      await loadContract(__dirname, [false], "Errors", 10);
+    } catch (_e) {
+      const e = _e as TransactionError;
+      expect(e.message).toBe('account data too small for instruction');
+      expect(e.computeUnitsUsed).toBe(232);
       expect(e.logs.length).toBeGreaterThan(1);
       return;
     }
