@@ -1,7 +1,12 @@
 import { PublicKey } from '@solana/web3.js';
 import expect from 'expect';
 
-import { numToPaddedHex, pubKeyToHex } from '../../src/utils';
+import {
+  encodeSeeds,
+  numToPaddedHex,
+  pubKeyToHex,
+  Seed,
+} from '../../src/utils';
 
 describe('Utils', () => {
   it('numToPaddedHex works', async function () {
@@ -42,5 +47,20 @@ describe('Utils', () => {
     for (const [pubKey, hex] of cases.entries()) {
       expect(pubKeyToHex(new PublicKey(pubKey))).toEqual(hex);
     }
+  });
+
+  it('encodeSeeds works', async function () {
+    expect(encodeSeeds([Buffer.from('00', 'hex')]).toString('hex')).toEqual(
+      '010100'
+    );
+    expect(encodeSeeds([new Uint8Array(1)]).toString('hex')).toEqual('010100');
+    expect(encodeSeeds(['0']).toString('hex')).toEqual('010130');
+    expect(
+      encodeSeeds([
+        new PublicKey('G5j33ePDCSZddCogbXqffse9aMrj5684EXJHWfXB7W8K'),
+      ]).toString('hex')
+    ).toEqual(
+      '0120e01528146c7b580018be6bcfaf1d3ca0deb2e145abf912f8a4a82eec6e399f0c'
+    );
   });
 });

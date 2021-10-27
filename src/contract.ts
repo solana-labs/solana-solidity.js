@@ -18,7 +18,7 @@ import { Program } from './program';
 
 export type ProgramDerivedAddress = {
   account: PublicKey;
-  seed: Buffer;
+  seed: string | PublicKey | Uint8Array | Buffer;
 };
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
