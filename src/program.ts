@@ -12,7 +12,7 @@ import {
 } from '@solana/web3.js';
 import crypto from 'crypto';
 import { Interface } from '@ethersproject/abi';
-import { ContractDeployResult } from 'src';
+import { ContractDeployResult, ProgramDerivedAddress } from 'src';
 
 import { Contract, ContractDeployOptions } from './contract';
 import {
@@ -76,14 +76,12 @@ export class Program {
 
   /**
    * Create program address
+   * TODO: use .findProgramAddress
    *
    * @param salt
    * @returns
    */
-  async createProgramAddress(): Promise<{
-    account: PublicKey;
-    seed: Buffer;
-  } | null> {
+  async createProgramAddress(): Promise<ProgramDerivedAddress | null> {
     while (true) {
       const seed = crypto.randomBytes(7);
 
