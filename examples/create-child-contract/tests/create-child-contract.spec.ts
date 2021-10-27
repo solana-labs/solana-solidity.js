@@ -1,4 +1,4 @@
-import { Keypair, PublicKey } from '@solana/web3.js';
+import { Keypair } from '@solana/web3.js';
 import expect from 'expect';
 import { Contract, Program } from '../../../src';
 import { loadContract } from '../../utils';
