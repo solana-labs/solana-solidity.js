@@ -1,5 +1,5 @@
 {
-  "name": "solana-solidity",
+  "name": "@solana/solidity",
   "version": "0.0.16",
   "description": "Solana Solidity Contracts JavaScript Client",
   "main": "dist/esm/src/index.js",
