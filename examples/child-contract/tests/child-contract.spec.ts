@@ -37,7 +37,7 @@ describe('ChildContract', () => {
     expect(logs.toString()).toContain('initializing child');
   });
 
-  it('Reads child contract', async function () {
+  xit('Reads child contract', async function () {
     const {
       logs,
       result: [value],
@@ -50,7 +50,7 @@ describe('ChildContract', () => {
     expect(value.toString()).toEqual('0');
   });
 
-  it('Updates child contract', async function () {
+  xit('Updates child contract', async function () {
     const { logs: logs1 } = await contract.functions.updateChild(2, {
       accounts: [childStorageAccount],
       writableAccounts: [contract.getProgramKey()],
