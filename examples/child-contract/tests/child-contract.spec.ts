@@ -3,7 +3,7 @@ import expect from 'expect';
 import { Contract, Program, ProgramDerivedAddress } from '../../../src';
 import { loadContract } from '../../utils';
 
-describe('CreateContract', () => {
+describe('ChildContract', () => {
   let program: Program;
   let contract: Contract;
   let contractStorageKeyPair: Keypair;
@@ -48,5 +48,26 @@ describe('CreateContract', () => {
 
     expect(logs.toString()).toContain('reading child');
     expect(value.toString()).toEqual('0');
+  });
+
+  it('Updates child contract', async function () {
+    const { logs: logs1 } = await contract.functions.updateChild(2, {
+      accounts: [childStorageAccount],
+      writableAccounts: [contract.getProgramKey()],
+      programDerivedAddresses: [childSeedAndAccount!],
+      signers: [contractStorageKeyPair],
+    });
+    expect(logs1.toString()).toContain('updating child');
+
+    const {
+      logs: logs2,
+      result: [value],
+    } = await contract.functions.readChild({
+      accounts: [childStorageAccount],
+      writableAccounts: [contract.getProgramKey()],
+    });
+
+    expect(logs2.toString()).toContain('reading child');
+    expect(value.toString()).toEqual('2');
   });
 });
