@@ -7,6 +7,7 @@ const LOG_LOG_PREFIX = 'Program log: ';
 const LOG_COMPUTE_UNITS_RE = /consumed (\d+) of (\d+) compute units/i;
 const LOG_DATA_PREFIX = 'Program data: ';
 const LOG_FAILED_TO_COMPLETE_PREFIX = 'Program failed to complete: ';
+const LOG_FAILED_RE = /(Program \w+ )?failed: (.*)$/;
 
 export class TransactionError extends Error {
   public logs: string[];
@@ -274,7 +275,12 @@ export function parseTxError(
     txErr = new TransactionError(log);
   } else {
     if (!encoded) {
-      txErr = new TransactionError('return data or log not set');
+      const failedMatch = logs[logs.length - 1].match(LOG_FAILED_RE);
+      if (failedMatch) {
+        txErr = new TransactionError(failedMatch[2]);
+      } else {
+        txErr = new TransactionError('return data or log not set');
+      }
     }
     // else if (encoded?.readUInt32BE(0) != 0x08c379a0) {
     //   txErr = new TransactionError('signature not correct');
@@ -377,6 +383,5 @@ export function parseLogFailedToComplete(log: string) {
   if (log.startsWith(LOG_FAILED_TO_COMPLETE_PREFIX)) {
     return log.slice(LOG_FAILED_TO_COMPLETE_PREFIX.length);
   }
-
   return null;
 }

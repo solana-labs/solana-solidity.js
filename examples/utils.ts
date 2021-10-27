@@ -9,7 +9,8 @@ const DEFAULT_URL: string = 'http://localhost:8899';
 export async function loadContract(
   exampleDir: string,
   constructorArgs: any[] = [],
-  contractName: string | null = null
+  contractName: string | null = null,
+  space: number = 8192 * 8,
 ) {
   const programSo = fs.readFileSync(
     path.join(exampleDir, '../build/bundle.so')
@@ -42,7 +43,7 @@ export async function loadContract(
   const { contract, events } = await program.deployContract({
     name: contractName,
     abi,
-    space: 8192 * 8,
+    space,
     storageKeyPair,
     constructorArgs,
   });
@@ -72,7 +73,7 @@ export async function newAccountWithLamports(
 
   let retries = 10;
   await connection.requestAirdrop(account.publicKey, lamports);
-  for (;;) {
+  for (; ;) {
     await sleep(500);
     if (lamports == (await connection.getBalance(account.publicKey))) {
       return account;
