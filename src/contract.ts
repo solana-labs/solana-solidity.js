@@ -13,8 +13,13 @@ import {
 import { keccak256 } from '@ethersproject/keccak256';
 
 import { EventCallback, parseLogTopic } from './logs';
-import { numToPaddedHex } from './utils';
+import { numToPaddedHex, encodeSeeds } from './utils';
 import { Program } from './program';
+
+export type ProgramDerivedAddress = {
+  account: PublicKey;
+  seed: Buffer;
+};
 
 export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 
@@ -25,20 +30,18 @@ export type ContractDeployOptions = {
   constructorArgs?: any[];
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
-  // programDerivedAddresses?: PublicKey[];
+  programDerivedAddresses?: ProgramDerivedAddress[];
   storageKeyPair: Keypair;
-  seeds?: Buffer;
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   value?: number;
   simulate?: boolean;
 };
 
-export type ContractTransactionOptions = {
+export type ContractFunctionCallOptions = {
   accounts?: PublicKey[];
   writableAccounts?: PublicKey[];
-  programDerivedAddresses?: PublicKey[];
-  seeds?: Buffer;
+  programDerivedAddresses?: ProgramDerivedAddress[];
   signers?: Keypair[];
   caller?: PublicKey | undefined;
   value?: number;
@@ -83,7 +86,7 @@ export class Contract {
       storageKeyPair,
       accounts = [],
       writableAccounts = [],
-      seeds = Buffer.from('00', 'hex'),
+      programDerivedAddresses = [],
       signers = [],
       caller = program.payerAccount.publicKey,
       value = 0,
@@ -97,12 +100,14 @@ export class Contract {
 
     let hash = keccak256(Buffer.from(contractName));
 
+    const seeds = programDerivedAddresses.map((pda) => pda.seed);
+
     const data = Buffer.concat([
       storageKeyPair.publicKey.toBuffer(), //           contract
       caller.toBuffer(), //                             sender
       Buffer.from(numToPaddedHex(value), 'hex'), //     value
       Buffer.from(hash.substr(2, 8), 'hex'), //         hash
-      seeds, //                                         seeds
+      encodeSeeds(seeds), //                                         seeds
       Buffer.from(input.replace('0x', ''), 'hex'), //   input
     ]);
 
@@ -233,13 +238,12 @@ export class Contract {
   protected async call(
     name: string,
     args: any[],
-    options?: ContractTransactionOptions
+    options?: ContractFunctionCallOptions
   ): Promise<ContractCallResult> {
     const {
       accounts = [],
       writableAccounts = [],
       programDerivedAddresses = [],
-      seeds = Buffer.from('00', 'hex'),
       signers = [],
       caller = this.program.payerAccount.publicKey,
       value = 0,
@@ -249,18 +253,20 @@ export class Contract {
     const fragment = this.abi.getFunction(name);
     const input = this.abi.encodeFunctionData(name, args);
 
+    const seeds = programDerivedAddresses.map((pda) => pda.seed);
+
     const data = Buffer.concat([
       this.storageAccount.toBuffer(), //                contract
       caller.toBuffer(), //                             sender
       Buffer.from(numToPaddedHex(value), 'hex'), //     value
       Buffer.from('00000000', 'hex'), //                hash
-      seeds, //                                         seeds
+      encodeSeeds(seeds), //                                         seeds
       Buffer.from(input.replace('0x', ''), 'hex'), //   input
     ]);
 
     const keys = [
-      ...programDerivedAddresses.map((pubkey) => ({
-        pubkey,
+      ...programDerivedAddresses.map((pda) => ({
+        pubkey: pda.account,
         isSigner: false,
         isWritable: true,
       })),

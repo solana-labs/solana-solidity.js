@@ -89,18 +89,3 @@ export function sleep(ms: number) {
     setTimeout(resolve, ms);
   });
 }
-
-export function encodeSeeds(seeds: Buffer[]): Buffer {
-  let seedEncoded = Buffer.alloc(
-    1 + seeds.map((seed) => seed.length + 1).reduce((a, b) => a + b, 0)
-  );
-  seedEncoded.writeUInt8(seeds.length);
-  let offset = 1;
-  seeds.forEach((seed) => {
-    seedEncoded.writeUInt8(seed.length, offset);
-    offset += 1;
-    seed.copy(seedEncoded, offset);
-    offset += seed.length;
-  });
-  return seedEncoded;
-}
