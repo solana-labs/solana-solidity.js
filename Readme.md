@@ -4,7 +4,7 @@ JavaScript Client to use to deploy and interact with Solang-compiled Solidity co
 
 ## Documentation
 
-Checkout the docs [over here](https://vbstreetz.github.io/solana-solidity.js).
+Checkout the docs [over here](https://solana-labs.github.io/solana-solidity.js).
 
 ## Licence
 

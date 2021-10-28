@@ -21,7 +21,7 @@ docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
 ```
 mkdir -p project/contracts project/build
 cd project
-curl -o contracts/ERC20.sol https://raw.githubusercontent.com/vbstreetz/solana-solidity.js/master/examples/erc20/contracts/ERC20.sol
+curl -o contracts/ERC20.sol https://raw.githubusercontent.com/solana-labs/solana-solidity.js/master/examples/erc20/contracts/ERC20.sol
 ```
 
 5. Compile the Solidity contract:
