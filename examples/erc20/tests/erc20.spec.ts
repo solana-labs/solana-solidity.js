@@ -17,26 +17,26 @@ describe('ERC20', () => {
         this.timeout(150000);
         ({ contract, payerETHAddress } = await loadContract(__dirname, [NAME, SYMBOL, TOTAL_SUPPLY]));
 
-        const { result: name } = await contract.functions.name();
+        const name = await contract.name();
         expect(name).toEqual(NAME);
 
-        const { result: symbol } = await contract.functions.symbol();
+        const symbol = await contract.symbol();
         expect(symbol).toEqual(SYMBOL);
 
-        const { result: decimals } = await contract.functions.decimals();
+        const decimals = await contract.decimals();
         expect(decimals).toEqual(18);
 
-        const { result: supply } = await contract.functions.totalSupply();
+        const supply = await contract.totalSupply();
         expect(supply.toString()).toEqual(TOTAL_SUPPLY.toString());
 
-        const { result: balance } = await contract.functions.balanceOf(payerETHAddress);
+        const balance = await contract.balanceOf(payerETHAddress);
         expect(balance.toString()).toEqual(TOTAL_SUPPLY.toString());
     });
 
     it('loads existing contract', async function () {
         contract = contract.clone();
 
-        const { result: name } = await contract.functions.name();
+        const name = await contract.name();
         expect(name).toEqual('Solana');
     });
 
@@ -44,12 +44,12 @@ describe('ERC20', () => {
         const otherAccount = pubKeyToHex(Keypair.generate().publicKey);
         const transferAmount = 9;
 
-        await contract.functions.transfer(otherAccount, transferAmount);
+        await contract.transfer(otherAccount, transferAmount);
 
-        const { result: otherAccountBalance } = await contract.functions.balanceOf(otherAccount);
+        const otherAccountBalance = await contract.balanceOf(otherAccount);
         expect(otherAccountBalance.toString()).toEqual(transferAmount.toString());
 
-        const { result: payerBalance } = await contract.functions.balanceOf(payerETHAddress);
+        const payerBalance = await contract.balanceOf(payerETHAddress);
         expect(payerBalance.toString()).toEqual((TOTAL_SUPPLY - transferAmount).toString());
     });
 
@@ -62,7 +62,7 @@ describe('ERC20', () => {
                 await contract.removeEventListener(listenerId);
                 resolve(event);
             });
-            contract.functions.approve(spenderAccount, spendAmount).catch(reject);
+            contract.approve(spenderAccount, spendAmount).catch(reject);
         });
 
         expect(event.name).toEqual('Approval');
