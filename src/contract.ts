@@ -1,5 +1,6 @@
-import { Fragment, Interface, LogDescription, Result } from '@ethersproject/abi';
+import { FunctionFragment, Interface, LogDescription, Result } from '@ethersproject/abi';
 import { keccak256 } from '@ethersproject/keccak256';
+import { defineReadOnly } from '@ethersproject/properties';
 import {
     BPF_LOADER_PROGRAM_ID,
     BpfLoader,
@@ -22,11 +23,6 @@ import {
     simulateTransactionWithLogs,
 } from './logs';
 import { Abi, encodeSeeds, numToPaddedHex } from './utils';
-
-// @FIXME: hack to keep existing tests passing because they assume `result` cannot be null
-// @FIXME: this should return Promise<ContractFunctionResult> and tests should be refactored
-// @TODO: docs
-export type ContractFunction = (...args: any[]) => Promise<any>;
 
 // @TODO: docs
 export interface ProgramDerivedAddress {
@@ -60,10 +56,13 @@ export interface ContractFunctionResult extends ContractCallResult {
 }
 
 // @TODO: docs
-export type ContractCreateStorageOptions = Pick<ContractCallOptions, 'payer' | 'confirmOptions'>;
+export type ContractFunction = (...args: any[]) => Promise<ContractFunctionResult | any>;
 
 /** A contract represents a Solidity contract that has been compiled with Solang to be deployed on Solana. */
 export class Contract {
+    /** @TODO: docs */
+    readonly [name: string]: ContractFunction | any;
+
     /** Connection to use */
     readonly connection: Connection;
     /** Account the program is located at (aka Program ID) */
@@ -98,32 +97,46 @@ export class Contract {
         this.abi = abi;
         this.interface = new Interface(abi);
         this.functions = {};
-        for (const fragment of Object.values(this.interface.functions)) {
-            this.functions[fragment.name] = this.buildCall(fragment);
-        }
         this.payer = payer;
         this.logs = new LogsParser(this);
-    }
 
-    /**
-     * Clone the contract. This creates a new contract with the same configuration but no log listeners.
-     *
-     * @return Clone of the contract
-     */
-    clone(): Contract {
-        return new Contract(this.connection, this.program, this.storage, this.abi, this.payer);
-    }
+        const uniqueNames: Record<string, string[]> = {};
+        const uniqueSignatures: Record<string, boolean> = {};
 
-    /**
-     * Set the payer for transactions and storage
-     *
-     * @param payer Payer for transactions and storage (or `null` to unset)
-     *
-     * @return Contract itself (for method chaining)
-     */
-    connect(payer: Signer | null): this {
-        this.payer = payer;
-        return this;
+        for (const [signature, fragment] of Object.entries(this.interface.functions)) {
+            if (uniqueSignatures[signature]) {
+                console.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
+                return;
+            }
+            uniqueSignatures[signature] = true;
+
+            const name = fragment.name;
+            if (!uniqueNames[`%${name}`]) {
+                uniqueNames[`%${name}`] = [];
+            }
+            uniqueNames[`%${name}`].push(signature);
+
+            if (!this.functions[signature]) {
+                defineReadOnly(this.functions, signature, this.buildCall(fragment, false));
+            }
+            if (typeof this[signature] === 'undefined') {
+                defineReadOnly<any, any>(this, signature, this.buildCall(fragment, true));
+            }
+        }
+
+        for (const uniqueName of Object.keys(uniqueNames)) {
+            const signatures = uniqueNames[uniqueName];
+            if (signatures.length > 1) continue;
+            const signature = signatures[0];
+
+            const name = uniqueName.slice(1);
+            if (!this.functions[name]) {
+                defineReadOnly(this.functions, name, this.functions[signature]);
+            }
+            if (typeof this[name] === 'undefined') {
+                defineReadOnly(this, name, this[signature]);
+            }
+        }
     }
 
     /**
@@ -350,19 +363,24 @@ export class Contract {
     }
 
     /** @internal */
-    protected buildCall(fragment: Fragment): ContractFunction {
+    protected buildCall(fragment: FunctionFragment, returnResult: boolean): ContractFunction {
         return (...args: any[]) => {
             const options = args[args.length - 1];
             if (args.length > fragment.inputs.length && typeof options === 'object') {
-                return this.call(fragment.name, args.slice(0, fragment.inputs.length), options);
+                return this.call(fragment, returnResult, args.slice(0, fragment.inputs.length), options);
             } else {
-                return this.call(fragment.name, args);
+                return this.call(fragment, returnResult, args);
             }
         };
     }
 
     /** @internal */
-    protected async call(name: string, args: any[], options?: ContractCallOptions): Promise<ContractFunctionResult> {
+    protected async call<T extends boolean>(
+        fragment: FunctionFragment,
+        returnResult: T,
+        args: readonly any[],
+        options?: ContractCallOptions
+    ): Promise<T extends true ? any : ContractFunctionResult> {
         const payer = options?.payer || this.payer;
         if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
 
@@ -382,15 +400,15 @@ export class Contract {
         } = options ?? {};
 
         const seeds = programDerivedAddresses.map(({ seed }) => seed);
-        const input = this.interface.encodeFunctionData(name, args);
+        const input = this.interface.encodeFunctionData(fragment, args);
 
         const data = Buffer.concat([
-            this.storage.toBuffer(), //                       storage  @FIXME: these comments are kind of useless
-            sender.toBuffer(), //                             sender   @FIXME: better to explain why, not what
-            Buffer.from(numToPaddedHex(value), 'hex'), //     value
-            Buffer.from('00000000', 'hex'), //                hash
-            encodeSeeds(seeds), //                            seeds
-            Buffer.from(input.replace('0x', ''), 'hex'), //   input
+            this.storage.toBuffer(), //                     storage @FIXME: these comments are kind of useless
+            sender.toBuffer(), //                           sender  @FIXME: better to explain why, not what
+            Buffer.from(numToPaddedHex(value), 'hex'), //   value
+            Buffer.from('00000000', 'hex'), //              hash
+            encodeSeeds(seeds), //                          seeds
+            Buffer.from(input.replace('0x', ''), 'hex'), // input
         ]);
 
         const keys = [
@@ -435,29 +453,28 @@ export class Contract {
             })
         );
 
-        const { logs, encoded, computeUnitsUsed } = simulate
-            ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
-            : await sendAndConfirmTransactionWithLogs(
-                  this.connection,
-                  transaction,
-                  [payer, ...signers],
-                  confirmOptions
-              );
+        // If the function is read-only, simulate the transaction to get the result
+        const { logs, encoded, computeUnitsUsed } =
+            simulate || fragment.stateMutability === 'view' || fragment.stateMutability === 'pure'
+                ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
+                : await sendAndConfirmTransactionWithLogs(
+                      this.connection,
+                      transaction,
+                      [payer, ...signers],
+                      confirmOptions
+                  );
 
         const events = this.parseLogsEvents(logs);
 
+        const length = fragment.outputs?.length;
         let result: Result | null = null;
 
-        const fragment = this.interface.getFunction(name);
-        if (fragment.outputs?.length) {
+        if (length) {
             if (!encoded) throw new Error('MISSING_RETURN_DATA'); // @FIXME: add error types
-
             result = this.interface.decodeFunctionResult(fragment, encoded);
-            if (fragment.outputs.length === 1) {
-                result = result[0];
-            }
         }
 
+        if (returnResult) return result && length === 1 ? result[0] : result;
         return { result, logs, events, computeUnitsUsed };
     }
 }
