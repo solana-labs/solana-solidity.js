@@ -30,6 +30,7 @@
         "@solana/web3.js": "^1.30.2"
     },
     "devDependencies": {
+        "@ethersproject/contracts": "^5.5.0",
         "@types/eslint": "^7.28.2",
         "@types/eslint-plugin-prettier": "^3.1.0",
         "@types/mocha": "^9.0.0",
