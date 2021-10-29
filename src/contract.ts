@@ -7,7 +7,6 @@ import {
     ConfirmOptions,
     Connection,
     PublicKey,
-    sendAndConfirmTransaction,
     Signer,
     SystemProgram,
     SYSVAR_CLOCK_PUBKEY,
@@ -198,10 +197,6 @@ export class Contract {
             },
         } = options ?? {};
 
-        // @TODO: error if the contract has already been deployed without sending a transaction
-
-        await this.createStorage(storage, space, { payer, confirmOptions });
-
         const hash = keccak256(Buffer.from(name));
         const seeds = programDerivedAddresses.map((pda) => pda.seed);
         const input = this.interface.encodeDeploy(constructorArgs);
@@ -250,7 +245,16 @@ export class Contract {
             })),
         ];
 
+        const lamports = await this.connection.getMinimumBalanceForRentExemption(space, confirmOptions.commitment);
+
         const transaction = new Transaction().add(
+            SystemProgram.createAccount({
+                fromPubkey: payer.publicKey,
+                newAccountPubkey: storage.publicKey,
+                lamports,
+                space,
+                programId: this.program,
+            }),
             new TransactionInstruction({
                 keys,
                 programId: this.program,
@@ -259,8 +263,8 @@ export class Contract {
         );
 
         const { logs, computeUnitsUsed } = simulate
-            ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
-            : await sendAndConfirmTransactionWithLogs(this.connection, transaction, [payer, ...signers]);
+            ? await simulateTransactionWithLogs(this.connection, transaction, [payer, storage, ...signers])
+            : await sendAndConfirmTransactionWithLogs(this.connection, transaction, [payer, storage, ...signers]);
 
         const events = this.parseLogsEvents(logs);
 
@@ -272,39 +276,34 @@ export class Contract {
     }
 
     /**
-     * Create a storage account for the contract, or for a child contract
+     * Clone the contract. This creates a new contract with the same configuration but no log listeners.
      *
-     * @param storage Keypair for the account the program's data is stored at
-     * @param space   Byte size to allocate for the storage account (this cannot be resized)
-     * @param options @TODO: docs
+     * @return Clone of the contract
      */
-    async createStorage(storage: Signer, space: number, options?: ContractCreateStorageOptions): Promise<void> {
-        const payer = options?.payer || this.payer;
-        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
+    clone(): Contract {
+        return new Contract(this.connection, this.program, this.storage, this.abi, this.payer);
+    }
 
-        const {
-            confirmOptions = {
-                commitment: 'confirmed',
-                skipPreflight: false,
-                preflightCommitment: 'processed',
-            },
-        } = options ?? {};
+    /**
+     * Set the payer for transactions and storage
+     *
+     * @param payer Payer for transactions and storage
+     *
+     * @return Contract itself (for method chaining)
+     */
+    connect(payer: Signer): this {
+        this.payer = payer;
+        return this;
+    }
 
-        // @TODO: error if the storage has already been created without sending a transaction
-
-        const lamports = await this.connection.getMinimumBalanceForRentExemption(space, confirmOptions.commitment);
-
-        const transaction = new Transaction().add(
-            SystemProgram.createAccount({
-                fromPubkey: payer.publicKey,
-                newAccountPubkey: storage.publicKey,
-                lamports,
-                space,
-                programId: this.program,
-            })
-        );
-
-        await sendAndConfirmTransaction(this.connection, transaction, [payer, storage], confirmOptions);
+    /**
+     * Unset the payer for transactions and storage
+     *
+     * @return Contract itself (for method chaining)
+     */
+    disconnect(): this {
+        this.payer = null;
+        return this;
     }
 
     /**
