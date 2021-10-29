@@ -27,6 +27,7 @@
         "@ethersproject/abi": "^5.5.0",
         "@ethersproject/bytes": "^5.5.0",
         "@ethersproject/keccak256": "^5.5.0",
+        "@ethersproject/properties": "^5.5.0",
         "@solana/web3.js": "^1.30.2"
     },
     "devDependencies": {
