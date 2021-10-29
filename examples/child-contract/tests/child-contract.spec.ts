@@ -1,15 +1,13 @@
-import { Keypair, PublicKey, Signer } from '@solana/web3.js';
-import { randomBytes } from 'crypto';
+import { Signer } from '@solana/web3.js';
 import expect from 'expect';
-import { Contract, ProgramDerivedAddress } from '../../../src';
+import { Contract, createProgramAddress, ProgramDerivedAddress } from '../../../src';
 import { loadContract } from '../../utils';
 
 describe('ChildContract', () => {
     let contract: Contract;
     let storage: Signer;
 
-    let childSeedAndAccount: ProgramDerivedAddress | null = null;
-    let childStorageAccount: PublicKey | null = null;
+    let childPDA: ProgramDerivedAddress;
 
     before(async function () {
         this.timeout(150000);
@@ -17,22 +15,18 @@ describe('ChildContract', () => {
     });
 
     it('Creates child contract', async function () {
-        const seed = randomBytes(7);
-        const [account] = await PublicKey.findProgramAddress([seed], contract.program);
-        childSeedAndAccount = { account, seed };
-
-        const childStorage = Keypair.generate();
-        await contract.createStorage(childStorage, 1024);
-        childStorageAccount = childStorage.publicKey;
+        childPDA = await createProgramAddress(contract.program);
 
         const { logs } = await contract.functions.createChild({
-            accounts: [childStorageAccount],
-            writableAccounts: [contract.program],
-            programDerivedAddresses: [childSeedAndAccount],
+            accounts: [contract.program],
+            programDerivedAddresses: [childPDA],
             signers: [storage],
         });
 
         expect(logs.toString()).toContain('initializing child');
+
+        const info = await contract.connection.getAccountInfo(childPDA.address);
+        console.log('info: ' + info);
     });
 
     xit('Reads child contract', async function () {
@@ -40,7 +34,7 @@ describe('ChildContract', () => {
             logs,
             result: [value],
         } = await contract.functions.readChild({
-            accounts: [childStorageAccount],
+            accounts: [childPDA.address],
             writableAccounts: [contract.program],
         });
 
@@ -50,9 +44,9 @@ describe('ChildContract', () => {
 
     xit('Updates child contract', async function () {
         const { logs: logs1 } = await contract.functions.updateChild(2, {
-            accounts: [childStorageAccount],
+            accounts: [childPDA.address],
             writableAccounts: [contract.program],
-            programDerivedAddresses: [childSeedAndAccount],
+            programDerivedAddresses: [childPDA],
             signers: [storage],
         });
         expect(logs1.toString()).toContain('updating child');
@@ -61,7 +55,7 @@ describe('ChildContract', () => {
             logs: logs2,
             result: [value],
         } = await contract.functions.readChild({
-            accounts: [childStorageAccount],
+            accounts: [childPDA.address],
             writableAccounts: [contract.program],
         });
 

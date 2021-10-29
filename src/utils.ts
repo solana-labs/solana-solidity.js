@@ -1,5 +1,6 @@
 import { JsonFragment } from '@ethersproject/abi';
 import { PublicKey } from '@solana/web3.js';
+import { randomBytes } from 'crypto';
 
 export type Abi = JsonFragment[];
 
@@ -37,6 +38,22 @@ export function encodeSeeds(seeds: Seed[]): Buffer {
     }
 
     return encoded;
+}
+
+export async function createProgramAddress(program: PublicKey): Promise<{ address: PublicKey; seed: Buffer }> {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const seed = randomBytes(7);
+
+        let address: PublicKey;
+        try {
+            [address] = await PublicKey.findProgramAddress([seed], program);
+        } catch (error) {
+            continue;
+        }
+
+        return { address, seed };
+    }
 }
 
 export function pubKeyToHex(publicKey: PublicKey): string {

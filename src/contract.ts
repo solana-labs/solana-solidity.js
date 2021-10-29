@@ -25,7 +25,7 @@ import { Abi, encodeSeeds, numToPaddedHex } from './utils';
 
 // @TODO: docs
 export interface ProgramDerivedAddress {
-    account: PublicKey;
+    address: PublicKey;
     seed: Buffer;
 }
 
@@ -412,8 +412,8 @@ export class Contract {
 
         const keys = [
             // @FIXME: should all these PDAs really be writable?
-            ...programDerivedAddresses.map((pda) => ({
-                pubkey: pda.account,
+            ...programDerivedAddresses.map(({ address }) => ({
+                pubkey: address,
                 isSigner: false,
                 isWritable: true,
             })),
