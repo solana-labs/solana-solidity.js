@@ -5,11 +5,12 @@ import { Contract } from './contract';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';
-const LOG_COMPUTE_UNITS_RE = /consumed (\d+) of (\d+) compute units/i;
+const LOG_COMPUTE_UNITS_REGEX = /consumed (\d+) of (\d+) compute units/i;
 const LOG_DATA_PREFIX = 'Program data: ';
 const LOG_FAILED_TO_COMPLETE_PREFIX = 'Program failed to complete: ';
-const LOG_FAILED_RE = /(Program \w+ )?failed: (.*)$/;
+const LOG_FAILED_REGEX = /(Program \w+ )?failed: (.*)$/;
 
+// @TODO: docs
 export class TransactionError extends Error {
     public logs: string[];
     public computeUnitsUsed: number;
@@ -21,15 +22,13 @@ export class TransactionError extends Error {
     }
 }
 
-export interface EventData {
-    data: string;
-    topics: string[];
-}
-
+// @TODO: docs
 export type EventListener = (event: LogDescription) => void;
 
+// @TODO: docs
 export type LogListener = (message: string) => void;
 
+/** @internal */
 export class LogsParser {
     protected _contract: Contract;
     protected _eventListeners: Map<number, EventListener>;
@@ -116,6 +115,7 @@ export interface LogsResult {
     computeUnitsUsed: number;
 }
 
+/** @internal */
 export async function simulateTransactionWithLogs(
     connection: Connection,
     transaction: Transaction,
@@ -131,6 +131,7 @@ export async function simulateTransactionWithLogs(
     return { logs, encoded, computeUnitsUsed };
 }
 
+/** @internal */
 export async function sendAndConfirmTransactionWithLogs(
     connection: Connection,
     transaction: Transaction,
@@ -154,15 +155,7 @@ export async function sendAndConfirmTransactionWithLogs(
     return { logs, encoded, computeUnitsUsed };
 }
 
-/**
- * Parse tx `logs` for any:
- *  - "return" data
- *  - encoded log
- *  - compute units used
- *
- * @param logs
- * @return
- */
+/** @internal */
 export function parseTxLogs(logs: string[]) {
     let encoded: Buffer | null = null;
     let computeUnitsUsed = 0;
@@ -189,50 +182,44 @@ export function parseTxLogs(logs: string[]) {
     return { encoded, computeUnitsUsed, log }; // todo: better naming
 }
 
-/**
- * Parse tx error in log `encoded` text. Also retrieve compute units used
- *
- * @param encoded
- * @param computeUnitsUsed
- * @param log
- * @param logs
- * @return
- */
+/** @internal */
 export function parseTxError(encoded: Buffer | null, computeUnitsUsed: number, log: string | null, logs: string[]) {
-    let txErr: TransactionError;
+    let error: TransactionError;
 
     if (log) {
-        txErr = new TransactionError(log);
+        error = new TransactionError(log);
     } else {
         if (!encoded) {
-            const failedMatch = logs[logs.length - 1].match(LOG_FAILED_RE);
+            const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
             if (failedMatch) {
-                txErr = new TransactionError(failedMatch[2]);
+                error = new TransactionError(failedMatch[2]);
             } else {
-                txErr = new TransactionError('return data or log not set');
+                error = new TransactionError('return data or log not set');
             }
         }
+        // @FIXME: what does this do, should this be uncommented?
         // else if (encoded?.readUInt32BE(0) != 0x08c379a0) {
         //   txErr = new TransactionError('signature not correct');
         // }
         else {
             const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
-            txErr = new TransactionError(revertReason.toString());
+            error = new TransactionError(revertReason.toString());
         }
     }
 
-    txErr.logs = logs;
-    txErr.computeUnitsUsed = computeUnitsUsed;
-    return txErr;
+    error.logs = logs;
+    error.computeUnitsUsed = computeUnitsUsed;
+
+    return error;
 }
 
-/**
- * Parse contract events in `log` e.g.:
- *    Program data: PUBqMYpHIn...
- *
- * @param log
- * @return
- */
+/** @internal */
+export interface EventData {
+    data: string;
+    topics: string[];
+}
+
+/** @internal */
 export function parseLogTopic(log: string): EventData | null {
     if (log.startsWith(LOG_DATA_PREFIX)) {
         const fields = log.slice(LOG_DATA_PREFIX.length).split(' ');
@@ -246,67 +233,33 @@ export function parseLogTopic(log: string): EventData | null {
             return { data, topics };
         }
     }
-
     return null;
 }
 
-/**
- * Parse "return" data in `log` e.g.:
- *    Program return: 9cgeQC4fKNtL4vAk59UBjJwyAgXocDVwZCcnNq5gHrqk
- *
- * @param log
- * @return
- */
-function parseLogReturn(log: string) {
+/** @internal */
+export function parseLogReturn(log: string) {
     if (log.startsWith(LOG_RETURN_PREFIX)) {
         const [, returnData] = log.slice(LOG_RETURN_PREFIX.length).split(' ');
         return Buffer.from(returnData, 'base64');
     }
-
     return null;
 }
 
-/**
- * Parse "log" data in `log` e.g.:
- *    Program log: denominator should not be zero'
- *
- * @param log
- * @return
- */
+/** @internal */
 export function parseLogLog(log: string) {
-    if (log.startsWith(LOG_LOG_PREFIX)) {
-        return log.slice(LOG_LOG_PREFIX.length);
-    }
-
+    if (log.startsWith(LOG_LOG_PREFIX)) return log.slice(LOG_LOG_PREFIX.length);
     return null;
 }
 
-/**
- * Parse compute units in `log` e.g.:
- *   Program 9cgeQC4fKNtL4vAk59UBjJwyAgXocDVwZCcnNq5gHrqk consumed 1023 of 200000 compute units
- *
- * @param log
- * @return
- */
-function parseLogComputeUnitsUsed(log: string) {
-    const computeUnitsUsedMatch = log.match(LOG_COMPUTE_UNITS_RE);
-    if (computeUnitsUsedMatch) {
-        return Number(computeUnitsUsedMatch[1]);
-    }
-
+/** @internal */
+export function parseLogComputeUnitsUsed(log: string) {
+    const computeUnitsUsedMatch = log.match(LOG_COMPUTE_UNITS_REGEX);
+    if (computeUnitsUsedMatch) return Number(computeUnitsUsedMatch[1]);
     return null;
 }
 
-/**
- * Parse 'failed to complete' log e.g.:
- *   Program failed to complete: divide by zero at instruction 592
- *
- * @param log
- * @return
- */
+/** @internal */
 export function parseLogFailedToComplete(log: string) {
-    if (log.startsWith(LOG_FAILED_TO_COMPLETE_PREFIX)) {
-        return log.slice(LOG_FAILED_TO_COMPLETE_PREFIX.length);
-    }
+    if (log.startsWith(LOG_FAILED_TO_COMPLETE_PREFIX)) return log.slice(LOG_FAILED_TO_COMPLETE_PREFIX.length);
     return null;
 }

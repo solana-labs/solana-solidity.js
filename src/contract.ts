@@ -74,10 +74,11 @@ export class Contract {
     readonly interface: Interface;
     /** Callable functions mapped to the interface */
     readonly functions: Record<string, ContractFunction>;
-    /** Parser for events and program logs */
-    readonly logs: LogsParser;
     /** Payer for transactions and storage (optional) */
     payer: Signer | null;
+
+    /** @internal */
+    protected readonly logs: LogsParser;
 
     /*
      * Create a contract. It can either be a new contract to deploy as a Solana program,

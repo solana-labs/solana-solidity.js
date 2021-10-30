@@ -2,10 +2,13 @@ import { JsonFragment } from '@ethersproject/abi';
 import { PublicKey } from '@solana/web3.js';
 import { randomBytes } from 'crypto';
 
+// @TODO: docs
 export type Abi = JsonFragment[];
 
+/** @internal */
 export type Seed = string | PublicKey | Uint8Array | Buffer;
 
+/** @internal */
 export function seedToBuffer(seed: Seed): Buffer {
     if (seed instanceof Buffer) {
         return seed;
@@ -18,6 +21,7 @@ export function seedToBuffer(seed: Seed): Buffer {
     }
 }
 
+/** @internal */
 export function encodeSeeds(seeds: Seed[]): Buffer {
     const buffers = seeds.map(seedToBuffer);
 
@@ -40,6 +44,7 @@ export function encodeSeeds(seeds: Seed[]): Buffer {
     return encoded;
 }
 
+// @TODO: docs
 export async function createProgramAddress(program: PublicKey): Promise<{ address: PublicKey; seed: Buffer }> {
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -56,10 +61,12 @@ export async function createProgramAddress(program: PublicKey): Promise<{ addres
     }
 }
 
+// @TODO: docs
 export function pubKeyToHex(publicKey: PublicKey): string {
     return '0x' + publicKey.toBuffer().toString('hex');
 }
 
+// @TODO: docs
 export function numToPaddedHex(num: number) {
     const str = num.toString(16);
     const pad = 16 > str.length ? '0'.repeat(16 - str.length) : '';
