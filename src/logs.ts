@@ -109,6 +109,7 @@ export class LogsParser {
     }
 }
 
+/** @internal */
 export interface LogsResult {
     logs: string[];
     encoded: Buffer | null;

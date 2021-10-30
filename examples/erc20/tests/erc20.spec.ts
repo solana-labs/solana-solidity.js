@@ -2,7 +2,7 @@ import { LogDescription } from '@ethersproject/abi';
 import { Keypair } from '@solana/web3.js';
 import expect from 'expect';
 
-import { Contract, pubKeyToHex } from '../../../src';
+import { Contract, publicKeyToHex } from '../../../src';
 import { loadContract } from '../../utils';
 
 const NAME = 'Solana';
@@ -41,7 +41,7 @@ describe('ERC20', () => {
     });
 
     it('mutates contract state', async function () {
-        const otherAccount = pubKeyToHex(Keypair.generate().publicKey);
+        const otherAccount = publicKeyToHex(Keypair.generate().publicKey);
         const transferAmount = 9;
 
         await contract.transfer(otherAccount, transferAmount);
@@ -54,7 +54,7 @@ describe('ERC20', () => {
     });
 
     it('emits events', async function () {
-        const spenderAccount = pubKeyToHex(Keypair.generate().publicKey);
+        const spenderAccount = publicKeyToHex(Keypair.generate().publicKey);
         const spendAmount = 9;
 
         const event = await new Promise<LogDescription>((resolve, reject) => {

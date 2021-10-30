@@ -1,7 +1,7 @@
 import { Connection, Keypair } from '@solana/web3.js';
 import fs from 'fs';
 import path from 'path';
-import { Abi, Contract, pubKeyToHex } from '../src';
+import { Abi, Contract, publicKeyToHex } from '../src';
 
 const DEFAULT_URL = 'http://localhost:8899';
 
@@ -25,7 +25,7 @@ export async function loadContract(exampleDir: string, constructorArgs: any[] = 
 
     await contract.load(program, so, payer);
 
-    const payerETHAddress = pubKeyToHex(payer.publicKey);
+    const payerETHAddress = publicKeyToHex(payer.publicKey);
 
     const { events } = await contract.deploy(name, constructorArgs, program, storage, space);
 

@@ -5,6 +5,28 @@ import { randomBytes } from 'crypto';
 // @TODO: docs
 export type Abi = JsonFragment[];
 
+// @TODO: docs
+export async function createProgramAddress(program: PublicKey): Promise<{ address: PublicKey; seed: Buffer }> {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const seed = randomBytes(7);
+
+        let address: PublicKey;
+        try {
+            [address] = await PublicKey.findProgramAddress([seed], program);
+        } catch (error) {
+            continue;
+        }
+
+        return { address, seed };
+    }
+}
+
+// @TODO: docs
+export function publicKeyToHex(publicKey: PublicKey): string {
+    return '0x' + publicKey.toBuffer().toString('hex');
+}
+
 /** @internal */
 export type Seed = string | PublicKey | Uint8Array | Buffer;
 
@@ -44,29 +66,7 @@ export function encodeSeeds(seeds: Seed[]): Buffer {
     return encoded;
 }
 
-// @TODO: docs
-export async function createProgramAddress(program: PublicKey): Promise<{ address: PublicKey; seed: Buffer }> {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        const seed = randomBytes(7);
-
-        let address: PublicKey;
-        try {
-            [address] = await PublicKey.findProgramAddress([seed], program);
-        } catch (error) {
-            continue;
-        }
-
-        return { address, seed };
-    }
-}
-
-// @TODO: docs
-export function pubKeyToHex(publicKey: PublicKey): string {
-    return '0x' + publicKey.toBuffer().toString('hex');
-}
-
-// @TODO: docs
+/** @internal */
 export function numToPaddedHex(num: number) {
     const str = num.toString(16);
     const pad = 16 > str.length ? '0'.repeat(16 - str.length) : '';
