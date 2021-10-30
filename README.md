@@ -18,17 +18,20 @@ This is a short guide to deploying and interacting with the standard [ERC20](htt
 1. Install [Docker](https://docker.com) and [Node.js](https://nodejs.org) (version 14 or higher).
 
 2. Pull the required images:
+
 ```shell
 docker pull solanalabs/solana:edge
 docker pull ghcr.io/hyperledger-labs/solang:latest
 ```
 
 3. Start the test validator:
+
 ```shell
 docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
 ```
 
 4. Open a second terminal window, and initialize the project:
+
 ```shell
 mkdir -p project/contracts project/build
 cd project
@@ -37,24 +40,33 @@ curl -o contracts/ERC20.sol \
 ```
 
 5. Compile the Solidity contract:
+
 ```shell
 docker run --rm -it -v $PWD:/project --entrypoint /bin/bash \
        ghcr.io/hyperledger-labs/solang -c \
        "solang /project/contracts/ERC20.sol -o /project/build --target solana -v"
 ```
+
 This outputs `ERC20.abi` and `bundle.so` files to the `build` folder.
 
 6. Install the library:
-```
+
+```shell
+yarn add @solana/solidity
+
+# OR
+
 npm install @solana/solidity
 ```
 
 6. Create a script file to run:
-```
+
+```shell
 touch erc20.js
 ```
 
 7. Paste this code in the file:
+
 ```js
 const { Connection, LAMPORTS_PER_SOL, Keypair } = require('@solana/web3.js');
 const { Contract, pubKeyToHex } = require('@solana/solidity');
@@ -108,6 +120,7 @@ const BUNDLE_SO = readFileSync('./build/bundle.so');
 ```
 
 8. Deploy and interact with your contract on Solana!
+
 ```
 node erc20.js
 ```
@@ -125,11 +138,13 @@ yarn build
 ## Test
 
 Unit tests:
+
 ```shell
 make test-unit
 ```
 
 Integration tests:
+
 ```shell
 make test-all-examples
 make test-example o=errors # run the tests for a single example
