@@ -17,6 +17,7 @@
         "watch": "yarn build -w",
         "prepublishOnly": "yarn build --project tsconfig.publish.json",
         "docs": "shx rm -rf docs && NODE_OPTIONS=--max_old_space_size=4096 typedoc && shx cp .nojekyll docs/",
+        "deploy:docs": "gh-pages --dist docs --dotfiles",
         "test": "mocha",
         "fmt": "prettier --write '{*,**/*}.{js,ts,jsx,tsx,json}'",
         "lint": "eslint --ext .ts . && prettier --check '{*,**/*}.{js,ts,jsx,tsx,json}'",
