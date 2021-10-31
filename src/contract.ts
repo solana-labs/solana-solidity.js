@@ -1,376 +1,480 @@
+import { FunctionFragment, Interface, LogDescription, Result } from '@ethersproject/abi';
+import { keccak256 } from '@ethersproject/keccak256';
+import { defineReadOnly } from '@ethersproject/properties';
 import {
-  Keypair,
-  PublicKey,
-  TransactionInstruction,
-  SYSVAR_CLOCK_PUBKEY,
+    BPF_LOADER_PROGRAM_ID,
+    BpfLoader,
+    ConfirmOptions,
+    Connection,
+    PublicKey,
+    Signer,
+    SystemProgram,
+    SYSVAR_CLOCK_PUBKEY,
+    Transaction,
+    TransactionInstruction,
 } from '@solana/web3.js';
 import {
-  LogDescription,
-  Interface,
-  Fragment,
-  Result,
-} from '@ethersproject/abi';
-import { keccak256 } from '@ethersproject/keccak256';
+    EventListener,
+    LogListener,
+    LogsParser,
+    parseLogTopic,
+    sendAndConfirmTransactionWithLogs,
+    simulateTransactionWithLogs,
+} from './logs';
+import { Abi, encodeSeeds, numToPaddedHex } from './utils';
 
-import { EventCallback, parseLogTopic } from './logs';
-import { numToPaddedHex, encodeSeeds } from './utils';
-import { Program } from './program';
+// @TODO: docs
+export interface ProgramDerivedAddress {
+    address: PublicKey;
+    seed: Buffer;
+}
 
-export type ProgramDerivedAddress = {
-  account: PublicKey;
-  seed: string | PublicKey | Uint8Array | Buffer;
-};
+// @TODO: docs
+export interface ContractCallOptions {
+    payer?: Signer;
+    accounts?: PublicKey[];
+    writableAccounts?: PublicKey[];
+    programDerivedAddresses?: ProgramDerivedAddress[];
+    signers?: Signer[];
+    sender?: PublicKey | undefined;
+    value?: number;
+    simulate?: boolean;
+    confirmOptions?: ConfirmOptions;
+}
 
-export type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
+// @TODO: docs
+export interface ContractCallResult {
+    logs: string[];
+    events: LogDescription[];
+    computeUnitsUsed: number;
+}
 
-export type ContractDeployOptions = {
-  name: string;
-  abi: string;
-  space: number;
-  constructorArgs?: any[];
-  accounts?: PublicKey[];
-  writableAccounts?: PublicKey[];
-  programDerivedAddresses?: ProgramDerivedAddress[];
-  storageKeyPair: Keypair;
-  signers?: Keypair[];
-  caller?: PublicKey | undefined;
-  value?: number;
-  simulate?: boolean;
-};
+// @TODO: docs
+export interface ContractFunctionResult extends ContractCallResult {
+    result: Result | null;
+}
 
-export type ContractFunctionCallOptions = {
-  accounts?: PublicKey[];
-  writableAccounts?: PublicKey[];
-  programDerivedAddresses?: ProgramDerivedAddress[];
-  signers?: Keypair[];
-  caller?: PublicKey | undefined;
-  value?: number;
-  simulate?: boolean;
-};
+// @TODO: docs
+export type ContractFunction = (...args: any[]) => Promise<ContractFunctionResult | any>;
 
-export type ContractDeployResult = {
-  contract: Contract;
-  computeUnitsUsed: number;
-  logs: string[];
-  events: LogDescription[];
-};
-
-export type ContractCallResult = {
-  result: Result | null;
-  computeUnitsUsed: number;
-  logs: string[];
-  events: LogDescription[];
-};
-
+/** A contract represents a Solidity contract that has been compiled with Solang to be deployed on Solana. */
 export class Contract {
-  public program: Program;
-  public storageAccount: PublicKey;
-  public abiData: string;
+    /** @TODO: docs */
+    readonly [name: string]: ContractFunction | any;
 
-  /**
-   * Deploy a new contract to a loaded Solang program
-   *
-   * @param program
-   * @param options
-   * @returns
-   */
-  static async deploy(
-    program: Program,
-    options: ContractDeployOptions
-  ): Promise<ContractDeployResult> {
-    const {
-      name: contractName,
-      abi: contractAbiData,
-      space,
-      constructorArgs,
-      storageKeyPair,
-      accounts = [],
-      writableAccounts = [],
-      programDerivedAddresses = [],
-      signers = [],
-      caller = program.payerAccount.publicKey,
-      value = 0,
-      simulate = false,
-    } = options ?? {};
+    /** Connection to use */
+    readonly connection: Connection;
+    /** Account the program is located at (aka Program ID) */
+    readonly program: PublicKey;
+    /** Account the program's data is stored at */
+    readonly storage: PublicKey;
+    /** Application Binary Interface in JSON form */
+    readonly abi: Abi;
+    /** Ethers.js interface parsed from the ABI */
+    readonly interface: Interface;
+    /** Callable functions mapped to the interface */
+    readonly functions: Record<string, ContractFunction>;
+    /** Payer for transactions and storage (optional) */
+    payer: Signer | null;
 
-    await program.createStorageAccount(storageKeyPair, space);
-    const storageAccount = storageKeyPair.publicKey;
-    const abi = new Interface(contractAbiData);
-    const input = abi.encodeDeploy(constructorArgs);
+    /** @internal */
+    protected readonly logs: LogsParser;
 
-    let hash = keccak256(Buffer.from(contractName));
+    /*
+     * Create a contract. It can either be a new contract to deploy as a Solana program,
+     * or a reference to one already deployed.
+     *
+     * @param connection Connection to use
+     * @param program    Account the program is located at (aka Program ID)
+     * @param storage    Account the program's data is stored at
+     * @param abi        Application Binary Interface in JSON form
+     * @param payer      Payer for transactions and storage (optional)
+     */
+    constructor(connection: Connection, program: PublicKey, storage: PublicKey, abi: Abi, payer: Signer | null = null) {
+        this.connection = connection;
+        this.program = program;
+        this.storage = storage;
+        this.abi = abi;
+        this.interface = new Interface(abi);
+        this.functions = {};
+        this.payer = payer;
+        this.logs = new LogsParser(this);
 
-    const seeds = programDerivedAddresses.map((pda) => pda.seed);
+        const uniqueNames: Record<string, string[]> = {};
+        const uniqueSignatures: Record<string, boolean> = {};
 
-    const data = Buffer.concat([
-      storageKeyPair.publicKey.toBuffer(), //           contract
-      caller.toBuffer(), //                             sender
-      Buffer.from(numToPaddedHex(value), 'hex'), //     value
-      Buffer.from(hash.substr(2, 8), 'hex'), //         hash
-      encodeSeeds(seeds), //                                         seeds
-      Buffer.from(input.replace('0x', ''), 'hex'), //   input
-    ]);
+        for (const [signature, fragment] of Object.entries(this.interface.functions)) {
+            if (uniqueSignatures[signature]) {
+                console.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
+                return;
+            }
+            uniqueSignatures[signature] = true;
 
-    const keys = [
-      // ...programDerivedAddresses.map((pubkey) => ({
-      //   pubkey,
-      //   isSigner: false,
-      //   isWritable: true,
-      // })),
-      {
-        pubkey: storageAccount,
-        isSigner: false,
-        isWritable: true,
-      },
-      // {
-      //   pubkey: SYSVAR_CLOCK_PUBKEY,
-      //   isSigner: false,
-      //   isWritable: false,
-      // },
-      // {
-      //   pubkey: PublicKey.default,
-      //   isSigner: false,
-      //   isWritable: false,
-      // },
-      ...accounts.map((pubkey) => ({
-        pubkey,
-        isSigner: false,
-        isWritable: false,
-      })),
-      ...writableAccounts.map((pubkey) => ({
-        pubkey,
-        isSigner: false,
-        isWritable: true,
-      })),
-    ];
+            const name = fragment.name;
+            if (!uniqueNames[`%${name}`]) {
+                uniqueNames[`%${name}`] = [];
+            }
+            uniqueNames[`%${name}`].push(signature);
 
-    signers.unshift(program.payerAccount);
+            if (!this.functions[signature]) {
+                defineReadOnly(this.functions, signature, this.buildCall(fragment, false));
+            }
+            if (typeof this[signature] === 'undefined') {
+                defineReadOnly<any, any>(this, signature, this.buildCall(fragment, true));
+            }
+        }
 
-    const instruction = new TransactionInstruction({
-      keys,
-      programId: program.programAccount.publicKey,
-      data,
-    });
+        for (const uniqueName of Object.keys(uniqueNames)) {
+            const signatures = uniqueNames[uniqueName];
+            if (signatures.length > 1) continue;
+            const signature = signatures[0];
 
-    const { logs, computeUnitsUsed } = await (simulate
-      ? program.simulateTransaction
-      : program.sendAndConfirmTransaction
-    ).call(program, [instruction], signers);
+            const name = uniqueName.slice(1);
+            if (!this.functions[name]) {
+                defineReadOnly(this.functions, name, this.functions[signature]);
+            }
+            if (typeof this[name] === 'undefined') {
+                defineReadOnly(this, name, this[signature]);
+            }
+        }
+    }
 
-    const contract = new Contract(program, storageAccount, contractAbiData);
+    /**
+     * Load the contract's BPF bytecode as a Solana program.
+     *
+     * @param program Keypair for the account the program is located at
+     * @param so      ELF .so file produced by compiling the contract with Solang
+     * @param payer   Payer for transactions and storage (defaults to the payer provided in the constructor)
+     */
+    async load(program: Signer, so: Buffer, payer?: Signer | null): Promise<void> {
+        if (!program.publicKey.equals(this.program)) throw new Error('INVALID_PROGRAM_ACCOUNT'); // @FIXME: add error types
 
-    const events = contract.parseLogsEvents(logs);
+        payer ||= this.payer;
+        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
 
-    return {
-      contract,
-      logs,
-      computeUnitsUsed,
-      events,
-    };
-  }
+        // @TODO: error if the program already exists without sending a transaction
 
-  /**
-   * Load a deployed contract
-   *
-   * @param program
-   * @param abiData
-   * @param storageAccount
-   * @returns
-   */
-  static async get(
-    program: Program,
-    abiData: string,
-    storageAccount: PublicKey
-  ): Promise<Contract> {
-    return new Contract(program, storageAccount, abiData);
-  }
+        await BpfLoader.load(this.connection, payer, program, so, BPF_LOADER_PROGRAM_ID);
+    }
 
-  public abi: Interface;
-  readonly functions: { [name: string]: ContractFunction };
+    /**
+     * Deploy the contract to a loaded Solana program.
+     *
+     * @param name            Name of the contract to deploy
+     * @param constructorArgs Arguments to pass to the contract's Solidity constructor function
+     * @param program         Keypair for the account the program is located at
+     * @param storage         Keypair for the account the program's data is stored at
+     * @param space           Byte size to allocate for the storage account (this cannot be resized)
+     * @param options         @TODO: docs
+     *
+     * @return @TODO: docs
+     */
+    async deploy(
+        name: string,
+        constructorArgs: any[],
+        program: Signer,
+        storage: Signer,
+        space: number,
+        options?: ContractCallOptions
+    ): Promise<ContractCallResult> {
+        if (!program.publicKey.equals(this.program)) throw new Error('INVALID_PROGRAM_ACCOUNT'); // @FIXME: add error types
+        if (!storage.publicKey.equals(this.storage)) throw new Error('INVALID_STORAGE_ACCOUNT'); // @FIXME: add error types
 
-  /**
-   * Creates a new instance of Contract
-   *
-   * @param program
-   * @param storageAccount
-   * @param abiData
-   */
-  constructor(_program: Program, _storageAccount: PublicKey, _abiData: string) {
-    this.program = _program;
-    this.storageAccount = _storageAccount;
-    this.abiData = _abiData;
-    this.abi = new Interface(_abiData);
-    this.functions = {};
-    Object.values(this.abi.functions).forEach((frag) => {
-      this.functions[frag.name] = this.buildCall(frag);
-    });
-  }
+        const payer = options?.payer || this.payer;
+        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
 
-  /**
-   * Generate contract method for `fragment` of type "function"
-   *
-   * @param fragment
-   * @returns
-   */
-  buildCall(fragment: Fragment): ContractFunction {
-    return (...args: Array<any>) => {
-      const last = args[args.length - 1];
-      if (args.length > fragment.inputs.length && typeof last === 'object') {
-        return this.call(
-          fragment.name,
-          args.slice(0, fragment.inputs.length),
-          last
+        const {
+            accounts = [],
+            writableAccounts = [],
+            programDerivedAddresses = [],
+            signers = [],
+            sender = payer.publicKey,
+            value = 0,
+            simulate = false,
+            confirmOptions = {
+                commitment: 'confirmed',
+                skipPreflight: false,
+                preflightCommitment: 'processed',
+            },
+        } = options ?? {};
+
+        const hash = keccak256(Buffer.from(name));
+        const seeds = programDerivedAddresses.map((pda) => pda.seed);
+        const input = this.interface.encodeDeploy(constructorArgs);
+
+        const data = Buffer.concat([
+            this.storage.toBuffer(), //                     storage @FIXME: these comments are kind of useless
+            sender.toBuffer(), //                           sender  @FIXME: better to explain why, not what
+            Buffer.from(numToPaddedHex(value), 'hex'), //   value
+            Buffer.from(hash.substr(2, 8), 'hex'), //       hash
+            encodeSeeds(seeds), //                          seeds
+            Buffer.from(input.replace('0x', ''), 'hex'), // input
+        ]);
+
+        // @FIXME: why are so many of these keys commented out?
+        const keys = [
+            // @FIXME: should all these PDAs really be writable?
+            // ...programDerivedAddresses.map((pubkey) => ({
+            //   pubkey,
+            //   isSigner: false,
+            //   isWritable: true,
+            // })),
+            {
+                pubkey: storage.publicKey,
+                isSigner: false,
+                isWritable: true,
+            },
+            // {
+            //   pubkey: SYSVAR_CLOCK_PUBKEY,
+            //   isSigner: false,
+            //   isWritable: false,
+            // },
+            // {
+            //   pubkey: PublicKey.default,
+            //   isSigner: false,
+            //   isWritable: false,
+            // },
+            ...accounts.map((pubkey) => ({
+                pubkey,
+                isSigner: false,
+                isWritable: false,
+            })),
+            ...writableAccounts.map((pubkey) => ({
+                pubkey,
+                isSigner: false,
+                isWritable: true,
+            })),
+        ];
+
+        const lamports = await this.connection.getMinimumBalanceForRentExemption(space, confirmOptions.commitment);
+
+        const transaction = new Transaction().add(
+            SystemProgram.createAccount({
+                fromPubkey: payer.publicKey,
+                newAccountPubkey: storage.publicKey,
+                lamports,
+                space,
+                programId: this.program,
+            }),
+            new TransactionInstruction({
+                keys,
+                programId: this.program,
+                data,
+            })
         );
-      } else {
-        return this.call(fragment.name, args);
-      }
-    };
-  }
 
-  /**
-   * Invoke contract method `name` with `args` as it's arguments
-   *
-   * @param name
-   * @param args
-   * @param options
-   * @returns
-   */
-  protected async call(
-    name: string,
-    args: any[],
-    options?: ContractFunctionCallOptions
-  ): Promise<ContractCallResult> {
-    const {
-      accounts = [],
-      writableAccounts = [],
-      programDerivedAddresses = [],
-      signers = [],
-      caller = this.program.payerAccount.publicKey,
-      value = 0,
-      simulate = false,
-    } = options ?? {};
+        const { logs, computeUnitsUsed } = simulate
+            ? await simulateTransactionWithLogs(this.connection, transaction, [payer, storage, ...signers])
+            : await sendAndConfirmTransactionWithLogs(this.connection, transaction, [payer, storage, ...signers]);
 
-    const fragment = this.abi.getFunction(name);
-    const input = this.abi.encodeFunctionData(name, args);
+        const events = this.parseLogsEvents(logs);
 
-    const seeds = programDerivedAddresses.map((pda) => pda.seed);
-
-    const data = Buffer.concat([
-      this.storageAccount.toBuffer(), //                contract
-      caller.toBuffer(), //                             sender
-      Buffer.from(numToPaddedHex(value), 'hex'), //     value
-      Buffer.from('00000000', 'hex'), //                hash
-      encodeSeeds(seeds), //                                         seeds
-      Buffer.from(input.replace('0x', ''), 'hex'), //   input
-    ]);
-
-    const keys = [
-      ...programDerivedAddresses.map((pda) => ({
-        pubkey: pda.account,
-        isSigner: false,
-        isWritable: true,
-      })),
-      {
-        pubkey: this.storageAccount,
-        isSigner: false,
-        isWritable: true,
-      },
-      {
-        pubkey: SYSVAR_CLOCK_PUBKEY,
-        isSigner: false,
-        isWritable: false,
-      },
-      {
-        pubkey: PublicKey.default,
-        isSigner: false,
-        isWritable: false,
-      },
-      ...accounts.map((pubkey) => ({
-        pubkey,
-        isSigner: false,
-        isWritable: false,
-      })),
-      ...writableAccounts.map((pubkey) => ({
-        pubkey,
-        isSigner: false,
-        isWritable: true,
-      })),
-    ];
-
-    const instruction = new TransactionInstruction({
-      keys,
-      programId: this.getProgramKey(),
-      data,
-    });
-
-    signers.unshift(this.program.payerAccount);
-
-    const { encoded, logs, computeUnitsUsed } = await (simulate
-      ? this.program.simulateTransaction
-      : this.program.sendAndConfirmTransaction
-    ).call(this.program, [instruction], signers);
-
-    let result: Result | null = null;
-
-    if (fragment.outputs?.length) {
-      if (!encoded) {
-        throw new Error('return data not set');
-      }
-
-      result = this.abi.decodeFunctionResult(fragment, encoded);
-      if (fragment.outputs.length === 1) {
-        result = result[0];
-      }
+        return {
+            logs,
+            events,
+            computeUnitsUsed,
+        };
     }
 
-    const events = this.parseLogsEvents(logs);
-
-    return { result, logs, computeUnitsUsed, events };
-  }
-
-  /**
-   * Return the programs's account public key
-   *
-   * @returns PublicKey
-   */
-  getProgramKey(): PublicKey {
-    return this.program.programAccount.publicKey;
-  }
-
-  /**
-   * Invokes the given callback every time the given event is emitted
-   *
-   * @param callback  The function to invoke whenever the event is emitted from
-   *                  program logs.
-   */
-  public addEventListener(callback: EventCallback): number {
-    return this.program.addEventListener(this.abi, callback);
-  }
-
-  /**
-   * Unsubscribes from the given eventName.
-   */
-  public async removeEventListener(listener: number): Promise<void> {
-    return await this.program.removeEventListener(listener);
-  }
-
-  /**
-   * Parse event `logs` for any events emitted
-   *
-   * @param logs  Array of log strings
-   * @returns     Decoded event data
-   */
-  public parseLogsEvents(logs: string[]): LogDescription[] {
-    const events: LogDescription[] = [];
-
-    for (const log of logs) {
-      const eventData = parseLogTopic(log);
-      if (eventData) {
-        const event = this.abi.parseLog(eventData);
-        events.push(event);
-      }
+    /**
+     * Clone the contract. This creates a new contract with the same configuration but no log listeners.
+     *
+     * @return Clone of the contract
+     */
+    clone(): Contract {
+        return new Contract(this.connection, this.program, this.storage, this.abi, this.payer);
     }
 
-    return events;
-  }
+    /**
+     * Set the payer for transactions and storage
+     *
+     * @param payer Payer for transactions and storage
+     *
+     * @return Contract itself (for method chaining)
+     */
+    connect(payer: Signer): this {
+        this.payer = payer;
+        return this;
+    }
+
+    /**
+     * Unset the payer for transactions and storage
+     *
+     * @return Contract itself (for method chaining)
+     */
+    disconnect(): this {
+        this.payer = null;
+        return this;
+    }
+
+    /**
+     * Add a listener for log messages
+     *
+     * @param listener Callback for log messages
+     *
+     * @return ID of the listener (pass to `removeLogListener` to stop listening)
+     */
+    addLogListener(listener: LogListener): number {
+        return this.logs.addLogListener(listener);
+    }
+
+    /**
+     * Remove a listener for log messages
+     *
+     * @param listenerId ID of the listener (returned by `addLogListener`)
+     */
+    async removeLogListener(listenerId: number): Promise<void> {
+        return await this.logs.removeLogListener(listenerId);
+    }
+
+    /**
+     * Add a listener for contract events
+     *
+     * @param listener Callback for contract events
+     *
+     * @return ID of the listener (pass to `removeEventListener` to stop listening)
+     */
+    addEventListener(listener: EventListener): number {
+        return this.logs.addEventListener(listener);
+    }
+
+    /**
+     * Remove a listener for contract events
+     *
+     * @param listenerId ID of the listener (returned by `addEventListener`)
+     */
+    async removeEventListener(listenerId: number): Promise<void> {
+        return await this.logs.removeEventListener(listenerId);
+    }
+
+    /** @internal */
+    protected parseLogsEvents(logs: string[]): LogDescription[] {
+        const events: LogDescription[] = [];
+
+        for (const log of logs) {
+            const eventData = parseLogTopic(log);
+            if (eventData) {
+                const event = this.interface.parseLog(eventData);
+                events.push(event);
+            }
+        }
+
+        return events;
+    }
+
+    /** @internal */
+    protected buildCall(fragment: FunctionFragment, returnResult: boolean): ContractFunction {
+        return (...args: any[]) => {
+            const options = args[args.length - 1];
+            if (args.length > fragment.inputs.length && typeof options === 'object') {
+                return this.call(fragment, returnResult, args.slice(0, fragment.inputs.length), options);
+            } else {
+                return this.call(fragment, returnResult, args);
+            }
+        };
+    }
+
+    /** @internal */
+    protected async call<T extends boolean>(
+        fragment: FunctionFragment,
+        returnResult: T,
+        args: readonly any[],
+        options?: ContractCallOptions
+    ): Promise<T extends true ? any : ContractFunctionResult> {
+        const payer = options?.payer || this.payer;
+        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
+
+        const {
+            accounts = [],
+            writableAccounts = [],
+            programDerivedAddresses = [],
+            signers = [],
+            sender = payer.publicKey,
+            value = 0,
+            simulate = false,
+            confirmOptions = {
+                commitment: 'confirmed',
+                skipPreflight: false,
+                preflightCommitment: 'processed',
+            },
+        } = options ?? {};
+
+        const seeds = programDerivedAddresses.map(({ seed }) => seed);
+        const input = this.interface.encodeFunctionData(fragment, args);
+
+        const data = Buffer.concat([
+            this.storage.toBuffer(), //                     storage @FIXME: these comments are kind of useless
+            sender.toBuffer(), //                           sender  @FIXME: better to explain why, not what
+            Buffer.from(numToPaddedHex(value), 'hex'), //   value
+            Buffer.from('00000000', 'hex'), //              hash
+            encodeSeeds(seeds), //                          seeds
+            Buffer.from(input.replace('0x', ''), 'hex'), // input
+        ]);
+
+        const keys = [
+            // @FIXME: should all these PDAs really be writable?
+            ...programDerivedAddresses.map(({ address }) => ({
+                pubkey: address,
+                isSigner: false,
+                isWritable: true,
+            })),
+            {
+                pubkey: this.storage,
+                isSigner: false,
+                isWritable: true,
+            },
+            {
+                pubkey: SYSVAR_CLOCK_PUBKEY,
+                isSigner: false,
+                isWritable: false,
+            },
+            {
+                pubkey: PublicKey.default,
+                isSigner: false,
+                isWritable: false,
+            },
+            ...accounts.map((pubkey) => ({
+                pubkey,
+                isSigner: false,
+                isWritable: false,
+            })),
+            ...writableAccounts.map((pubkey) => ({
+                pubkey,
+                isSigner: false,
+                isWritable: true,
+            })),
+        ];
+
+        const transaction = new Transaction().add(
+            new TransactionInstruction({
+                keys,
+                programId: this.program,
+                data,
+            })
+        );
+
+        // If the function is read-only, simulate the transaction to get the result
+        const { logs, encoded, computeUnitsUsed } =
+            simulate || fragment.stateMutability === 'view' || fragment.stateMutability === 'pure'
+                ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
+                : await sendAndConfirmTransactionWithLogs(
+                      this.connection,
+                      transaction,
+                      [payer, ...signers],
+                      confirmOptions
+                  );
+
+        const events = this.parseLogsEvents(logs);
+
+        const length = fragment.outputs?.length;
+        let result: Result | null = null;
+
+        if (length) {
+            if (!encoded) throw new Error('MISSING_RETURN_DATA'); // @FIXME: add error types
+            result = this.interface.decodeFunctionResult(fragment, encoded);
+        }
+
+        if (returnResult) return result && length === 1 ? result[0] : result;
+        return { result, logs, events, computeUnitsUsed };
+    }
 }

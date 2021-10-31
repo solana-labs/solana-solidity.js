@@ -4,11 +4,18 @@ test-example:
 	@if [ ! -d "examples/$(o)" ]; then \
 		echo "example($o) doesn't exist"; \
 		exit -1; \
-  fi
+    fi
 	rm -rf examples/$(o)/build
 	mkdir -p examples/$(o)/build
 	docker run --rm -it -v $(PWD)/examples/$(o):/example --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /example/contracts/*.sol -o /example/build --target solana -v"
-	./node_modules/.bin/mocha -r ts-node/register examples/$(o)/tests/*.spec.ts
+	mocha examples/$(o)/tests/*.spec.ts
+
+build-all-examples: $(examples)
+	for example in $^; do\
+		rm -rf $${example}/build; \
+		mkdir -p $${example}/build; \
+		docker run --rm -it -v $(PWD)/$${example}:/example --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /example/contracts/*.sol -o /example/build --target solana -v"; \
+	done
 
 test-all-examples: $(examples)
 	for example in $^; do\
@@ -16,10 +23,10 @@ test-all-examples: $(examples)
 		mkdir -p $${example}/build; \
 		docker run --rm -it -v $(PWD)/$${example}:/example --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /example/contracts/*.sol -o /example/build --target solana -v"; \
 	done
-	./node_modules/.bin/mocha -r ts-node/register examples/**/tests/*.spec.ts
+	mocha examples/**/tests/*.spec.ts
 
 test-unit:
-	./node_modules/.bin/mocha -r ts-node/register tests/unit/*.spec.ts
+	mocha tests/unit/*.spec.ts
 
 validator:
 	docker pull solanalabs/solana:edge
@@ -32,4 +39,4 @@ deploy-docs:
 publish:
 	@npm run publish
 
-.PHONY: test-example test-all-examples test-unit validator deploy-docs publish
+.PHONY: test-example build-all-examples test-all-examples test-unit validator deploy-docs publish

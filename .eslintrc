@@ -1,14 +1,13 @@
 {
-	"extends": "eslint:recommended",
-	"plugins": ["prettier"],
+	"root": true,
+	"env": {
+		"node": true,
+		"es6": true
+	},
+	"extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+	"parser": "@typescript-eslint/parser",
+	"plugins": ["@typescript-eslint", "prettier"],
 	"rules": {
-		"prettier/prettier": [
-			"error",
-			{
-				"semi": true,
-				"singleQuote": true,
-				"trailingComma": "es5"
-			}
-		]
+		"@typescript-eslint/ban-ts-comment": "off"
 	}
 }

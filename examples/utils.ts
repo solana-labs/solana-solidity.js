@@ -1,92 +1,66 @@
-import path from 'path';
-import fs from 'fs';
 import { Connection, Keypair } from '@solana/web3.js';
+import fs from 'fs';
+import path from 'path';
+import { Abi, Contract, publicKeyToHex } from '../src';
 
-import { Program, pubKeyToHex } from '../src';
+const DEFAULT_URL = 'http://localhost:8899';
 
-const DEFAULT_URL: string = 'http://localhost:8899';
+export async function loadContract(exampleDir: string, constructorArgs: any[] = [], name?: string, space = 8192 * 8) {
+    const so = fs.readFileSync(path.join(exampleDir, '../build/bundle.so'));
 
-export async function loadContract(
-  exampleDir: string,
-  constructorArgs: any[] = [],
-  contractName: string | null = null,
-  space: number = 8192 * 8,
-) {
-  const programSo = fs.readFileSync(
-    path.join(exampleDir, '../build/bundle.so')
-  );
-  let abiFile = '';
-  if (contractName) {
-    abiFile = `${contractName}.abi`;
-  } else {
-    abiFile = fs
-      .readdirSync(path.join(exampleDir, '../build'))
-      .filter((n) => !~n.search('bundle.so'))[0];
-    contractName = abiFile.split('.abi')[0];
-  }
+    let file: string;
+    if (name) {
+        file = `${name}.abi`;
+    } else {
+        file = fs.readdirSync(path.join(exampleDir, '../build')).filter((n) => !~n.search('bundle.so'))[0];
+        name = file.split('.abi')[0];
+    }
 
-  const abi = fs.readFileSync(
-    path.join(exampleDir, `../build/${abiFile}`),
-    'utf-8'
-  );
-  const connection = getConnection();
-  const payerAccount = await newAccountWithLamports(connection);
-  const program = await Program.load(
-    connection,
-    payerAccount,
-    Keypair.generate(),
-    programSo
-  );
-  const payerETHAddress = pubKeyToHex(payerAccount.publicKey);
+    const abi = JSON.parse(fs.readFileSync(path.join(exampleDir, `../build/${file}`), 'utf-8')) as Abi;
+    const connection = getConnection();
+    const payer = await newAccountWithLamports(connection);
+    const program = Keypair.generate();
+    const storage = Keypair.generate();
+    const contract = new Contract(connection, program.publicKey, storage.publicKey, abi, payer);
 
-  const storageKeyPair = Keypair.generate();
-  const { contract, events } = await program.deployContract({
-    name: contractName,
-    abi,
-    space,
-    storageKeyPair,
-    constructorArgs,
-  });
+    await contract.load(program, so, payer);
 
-  return {
-    connection,
-    payerAccount,
-    program,
-    payerETHAddress,
-    contract,
-    contractAbi: abi,
-    contractStorageKeyPair: storageKeyPair,
-    events,
-  };
+    const payerETHAddress = publicKeyToHex(payer.publicKey);
+
+    const { events } = await contract.deploy(name, constructorArgs, program, storage, space);
+
+    return {
+        connection,
+        payer,
+        payerETHAddress,
+        contract,
+        abi,
+        storage,
+        events,
+    };
 }
 
 export function getConnection(rpcUrl?: string): Connection {
-  let url = rpcUrl || process.env.RPC_URL || DEFAULT_URL;
-  return new Connection(url, 'confirmed');
+    return new Connection(rpcUrl || process.env.RPC_URL || DEFAULT_URL, 'confirmed');
 }
 
-export async function newAccountWithLamports(
-  connection: Connection,
-  lamports: number = 10000000000
-): Promise<Keypair> {
-  const account = Keypair.generate();
+export async function newAccountWithLamports(connection: Connection, lamports = 10000000000): Promise<Keypair> {
+    const account = Keypair.generate();
 
-  let retries = 10;
-  await connection.requestAirdrop(account.publicKey, lamports);
-  for (; ;) {
-    await sleep(500);
-    if (lamports == (await connection.getBalance(account.publicKey))) {
-      return account;
+    let retries = 10;
+    await connection.requestAirdrop(account.publicKey, lamports);
+    for (;;) {
+        await sleep(500);
+        if (lamports == (await connection.getBalance(account.publicKey))) {
+            return account;
+        }
+        if (--retries <= 0) {
+            break;
+        }
     }
-    if (--retries <= 0) {
-      break;
-    }
-  }
-  throw new Error(`airdrop of ${lamports} failed`);
+    throw new Error(`airdrop of ${lamports} failed`);
 }
 
-export function sleep(ms: number) {
-  return new Promise(function (resolve) {
-    setTimeout(resolve, ms);
-  });
+export async function sleep(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
