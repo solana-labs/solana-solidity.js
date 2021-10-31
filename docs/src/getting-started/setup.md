@@ -21,7 +21,7 @@ docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
 ```
 mkdir -p project/contracts project/build
 cd project
-curl -o contracts/ERC20.sol https://raw.githubusercontent.com/solana-labs/solana-solidity.js/master/examples/erc20/contracts/ERC20.sol
+curl -o contracts/ERC20.sol https://raw.githubusercontent.com/solana-labs/solana-solidity.js/master/tests/integration/erc20/contracts/ERC20.sol
 ```
 
 5. Compile the Solidity contract:
@@ -135,11 +135,11 @@ Unit tests:
 make test-unit
 ```
 
-Integration(run tests in the examples):
+Integration(run tests in the `tests/integration` folder):
 
 ```
-make test-all-examples
-make test-example o=errors # single
+make test-all-integrations
+make test-integration o=errors # single
 ```
 
 ## Minimum version requirements

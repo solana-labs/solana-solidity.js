@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { Contract, TransactionError } from '../../../src';
+import { Contract, TransactionError } from '../../../../src';
 import { loadContract } from '../../utils';
 
 describe('Errors', () => {
@@ -96,13 +96,12 @@ describe('Errors', () => {
   });
 });
 
-
 describe('Errors', () => {
   it('deploy with not enough space', async function () {
     this.timeout(150000);
 
     try {
-      await loadContract(__dirname, [false], "Errors", 10);
+      await loadContract(__dirname, [false], 'Errors', 10);
     } catch (_e) {
       const e = _e as TransactionError;
       expect(e.message).toBe('account data too small for instruction');

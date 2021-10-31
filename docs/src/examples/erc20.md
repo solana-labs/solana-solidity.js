@@ -17,5 +17,5 @@ make validator
 4. Run the test
 
 ```
-make test-example o=erc20
+make test-integration o=erc20
 ```

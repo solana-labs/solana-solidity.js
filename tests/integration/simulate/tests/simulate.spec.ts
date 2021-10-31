@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { Contract, TransactionError } from '../../../src';
+import { Contract, TransactionError } from '../../../../src';
 import { loadContract } from '../../utils';
 
 describe('Simulate', () => {

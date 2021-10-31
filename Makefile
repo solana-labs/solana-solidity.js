@@ -1,22 +1,26 @@
-examples=$(shell find examples -maxdepth 1 -mindepth 1 -type d)
+integrations=$(shell find tests/integration -maxdepth 1 -mindepth 1 -type d)
 
-test-example:
-	@if [ ! -d "examples/$(o)" ]; then \
-		echo "example($o) doesn't exist"; \
+test:
+	@$(MAKE) test-unit
+	@$(MAKE) test-integrations
+
+test-integrations: $(integrations)
+	for integration in $^; do\
+		rm -rf $${integration}/build; \
+		mkdir -p $${integration}/build; \
+		docker run --rm -it -v $(PWD)/$${integration}:/integration --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /integration/contracts/*.sol -o /integration/build --target solana -v"; \
+	done
+	./node_modules/.bin/mocha -r ts-node/register tests/integration/**/tests/*.spec.ts
+
+test-integration:
+	@if [ ! -d "tests/integration/$(o)" ]; then \
+		echo "integration($o) doesn't exist"; \
 		exit -1; \
   fi
-	rm -rf examples/$(o)/build
-	mkdir -p examples/$(o)/build
-	docker run --rm -it -v $(PWD)/examples/$(o):/example --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /example/contracts/*.sol -o /example/build --target solana -v"
-	./node_modules/.bin/mocha -r ts-node/register examples/$(o)/tests/*.spec.ts
-
-test-all-examples: $(examples)
-	for example in $^; do\
-		rm -rf $${example}/build; \
-		mkdir -p $${example}/build; \
-		docker run --rm -it -v $(PWD)/$${example}:/example --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /example/contracts/*.sol -o /example/build --target solana -v"; \
-	done
-	./node_modules/.bin/mocha -r ts-node/register examples/**/tests/*.spec.ts
+	rm -rf tests/integration/$(o)/build
+	mkdir -p tests/integration/$(o)/build
+	docker run --rm -it -v $(PWD)/tests/integration/$(o):/integration --entrypoint /bin/bash ghcr.io/hyperledger-labs/solang -c "solang /integration/contracts/*.sol -o /integration/build --target solana -v"
+	./node_modules/.bin/mocha -r ts-node/register tests/integration/$(o)/tests/*.spec.ts
 
 test-unit:
 	./node_modules/.bin/mocha -r ts-node/register tests/unit/*.spec.ts
@@ -32,4 +36,4 @@ deploy-docs:
 publish:
 	@npm run publish
 
-.PHONY: test-example test-all-examples test-unit validator deploy-docs publish
+.PHONY: test test-integrations test-integration test-unit validator deploy-docs publish

@@ -1,6 +1,6 @@
 import { Keypair, PublicKey } from '@solana/web3.js';
 import expect from 'expect';
-import { Contract, Program, ProgramDerivedAddress } from '../../../src';
+import { Contract, Program, ProgramDerivedAddress } from '../../../../src';
 import { loadContract } from '../../utils';
 
 describe('ChildContract', () => {

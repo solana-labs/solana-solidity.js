@@ -2,7 +2,7 @@ import expect from 'expect';
 import { LogDescription } from '@ethersproject/abi';
 import { Keypair } from '@solana/web3.js';
 
-import { Contract, Program, pubKeyToHex } from '../../../src';
+import { Contract, Program, pubKeyToHex } from '../../../../src';
 import { loadContract } from '../../utils';
 
 const NAME = 'Solana';

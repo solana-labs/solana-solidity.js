@@ -1,3 +1,3 @@
 ## Introduction
 
-The `examples/` contained showcase the various features supported by the library.
+The `tests/integration/` folder contains examples that showcase the various features supported by the library.

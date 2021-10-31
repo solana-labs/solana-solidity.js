@@ -2,31 +2,31 @@ import path from 'path';
 import fs from 'fs';
 import { Connection, Keypair } from '@solana/web3.js';
 
-import { Program, pubKeyToHex } from '../src';
+import { Program, pubKeyToHex } from '../../src';
 
 const DEFAULT_URL: string = 'http://localhost:8899';
 
 export async function loadContract(
-  exampleDir: string,
+  integrationDir: string,
   constructorArgs: any[] = [],
   contractName: string | null = null,
-  space: number = 8192 * 8,
+  space: number = 8192 * 8
 ) {
   const programSo = fs.readFileSync(
-    path.join(exampleDir, '../build/bundle.so')
+    path.join(integrationDir, '../build/bundle.so')
   );
   let abiFile = '';
   if (contractName) {
     abiFile = `${contractName}.abi`;
   } else {
     abiFile = fs
-      .readdirSync(path.join(exampleDir, '../build'))
+      .readdirSync(path.join(integrationDir, '../build'))
       .filter((n) => !~n.search('bundle.so'))[0];
     contractName = abiFile.split('.abi')[0];
   }
 
   const abi = fs.readFileSync(
-    path.join(exampleDir, `../build/${abiFile}`),
+    path.join(integrationDir, `../build/${abiFile}`),
     'utf-8'
   );
   const connection = getConnection();
@@ -73,7 +73,7 @@ export async function newAccountWithLamports(
 
   let retries = 10;
   await connection.requestAirdrop(account.publicKey, lamports);
-  for (; ;) {
+  for (;;) {
     await sleep(500);
     if (lamports == (await connection.getBalance(account.publicKey))) {
       return account;
