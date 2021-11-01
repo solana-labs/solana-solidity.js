@@ -9,6 +9,12 @@
     "publishConfig": {
         "access": "public"
     },
+    "files": [
+        "lib",
+        "src",
+        "LICENSE",
+        "README.md"
+    ],
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
     "scripts": {
