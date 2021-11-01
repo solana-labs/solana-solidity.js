@@ -24,7 +24,7 @@ docker pull ghcr.io/hyperledger-labs/solang:latest
 docker pull solanalabs/solana:edge
 ```
 
-3. Start the test validator:
+3. Start the Solana test validator:
 
 ```shell
 docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
