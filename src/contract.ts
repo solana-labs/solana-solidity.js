@@ -283,15 +283,6 @@ export class Contract {
     }
 
     /**
-     * Clone the contract. This creates a new contract with the same configuration but no log listeners.
-     *
-     * @return Clone of the contract
-     */
-    clone(): Contract {
-        return new Contract(this.connection, this.program, this.storage, this.abi, this.payer);
-    }
-
-    /**
      * Set the payer for transactions and storage
      *
      * @param payer Payer for transactions and storage
@@ -314,23 +305,12 @@ export class Contract {
     }
 
     /**
-     * Add a listener for log messages
+     * Clone the contract. This creates a new contract with the same configuration but no log listeners.
      *
-     * @param listener Callback for log messages
-     *
-     * @return ID of the listener (pass to `removeLogListener` to stop listening)
+     * @return Clone of the contract
      */
-    addLogListener(listener: LogListener): number {
-        return this.logs.addLogListener(listener);
-    }
-
-    /**
-     * Remove a listener for log messages
-     *
-     * @param listenerId ID of the listener (returned by `addLogListener`)
-     */
-    async removeLogListener(listenerId: number): Promise<void> {
-        return await this.logs.removeLogListener(listenerId);
+    clone(): Contract {
+        return new Contract(this.connection, this.program, this.storage, this.abi, this.payer);
     }
 
     /**
@@ -351,6 +331,26 @@ export class Contract {
      */
     async removeEventListener(listenerId: number): Promise<void> {
         return await this.logs.removeEventListener(listenerId);
+    }
+
+    /**
+     * Add a listener for log messages
+     *
+     * @param listener Callback for log messages
+     *
+     * @return ID of the listener (pass to `removeLogListener` to stop listening)
+     */
+    addLogListener(listener: LogListener): number {
+        return this.logs.addLogListener(listener);
+    }
+
+    /**
+     * Remove a listener for log messages
+     *
+     * @param listenerId ID of the listener (returned by `addLogListener`)
+     */
+    async removeLogListener(listenerId: number): Promise<void> {
+        return await this.logs.removeLogListener(listenerId);
     }
 
     /** @internal */
