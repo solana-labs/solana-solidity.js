@@ -1,7 +1,7 @@
 import { Signer } from '@solana/web3.js';
 import expect from 'expect';
 import { Contract, createProgramAddress, ProgramDerivedAddress } from '../../../src';
-import { loadContract } from '../../utils';
+import { loadContract } from '../utils';
 
 describe('ChildContract', () => {
     let contract: Contract;

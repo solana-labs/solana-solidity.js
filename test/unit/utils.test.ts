@@ -3,7 +3,7 @@ import expect from 'expect';
 
 import { encodeSeeds, numToPaddedHex, publicKeyToHex } from '../../src/utils';
 
-describe('Utils', () => {
+describe('utils', () => {
     it('numToPaddedHex works', async function () {
         const cases = new Map([
             [0, '0000000000000000'],

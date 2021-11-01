@@ -18,11 +18,16 @@
         "prepublishOnly": "yarn build --project tsconfig.publish.json",
         "docs": "shx rm -rf docs && NODE_OPTIONS=--max_old_space_size=4096 typedoc && shx cp .nojekyll docs/",
         "deploy:docs": "gh-pages --dist docs --dotfiles",
-        "test": "mocha",
+        "build:test": "./build-test-examples.sh",
+        "test": "yarn test:unit; yarn test:examples",
+        "test:unit": "mocha test/unit/**/*.test.ts",
+        "test:examples": "mocha test/examples/**/*.test.ts",
         "fmt": "prettier --write '{*,**/*}.{js,ts,jsx,tsx,json}'",
         "lint": "eslint --ext .ts . && prettier --check '{*,**/*}.{js,ts,jsx,tsx,json}'",
         "lint:fix": "eslint --fix --ext .ts . && yarn fmt",
-        "nuke": "shx rm -rf node_modules yarn.lock"
+        "nuke": "shx rm -rf node_modules yarn.lock",
+        "docker": "docker pull ghcr.io/hyperledger-labs/solang:latest && docker pull solanalabs/solana:edge",
+        "validator": "docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null"
     },
     "dependencies": {
         "@ethersproject/abi": "^5.5.0",

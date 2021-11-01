@@ -1,6 +1,6 @@
 import expect from 'expect';
 import { Contract } from '../../../src';
-import { loadContract } from '../../utils';
+import { loadContract } from '../utils';
 
 describe('TxParams', () => {
     let contract: Contract;

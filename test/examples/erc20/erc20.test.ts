@@ -3,7 +3,7 @@ import { Keypair } from '@solana/web3.js';
 import expect from 'expect';
 
 import { Contract, publicKeyToHex } from '../../../src';
-import { loadContract } from '../../utils';
+import { loadContract } from '../utils';
 
 const NAME = 'Solana';
 const SYMBOL = 'SOL';

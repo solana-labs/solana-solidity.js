@@ -1,22 +1,22 @@
 import { Connection, Keypair } from '@solana/web3.js';
 import fs from 'fs';
 import path from 'path';
-import { Abi, Contract, publicKeyToHex } from '../src';
+import { Abi, Contract, publicKeyToHex } from '../../src';
 
 const DEFAULT_URL = 'http://localhost:8899';
 
 export async function loadContract(exampleDir: string, constructorArgs: any[] = [], name?: string, space = 8192 * 8) {
-    const so = fs.readFileSync(path.join(exampleDir, '../build/bundle.so'));
+    const so = fs.readFileSync(path.join(exampleDir, './build/bundle.so'));
 
     let file: string;
     if (name) {
         file = `${name}.abi`;
     } else {
-        file = fs.readdirSync(path.join(exampleDir, '../build')).filter((n) => !~n.search('bundle.so'))[0];
+        file = fs.readdirSync(path.join(exampleDir, './build')).filter((n) => !~n.search('bundle.so'))[0];
         name = file.split('.abi')[0];
     }
 
-    const abi = JSON.parse(fs.readFileSync(path.join(exampleDir, `../build/${file}`), 'utf-8')) as Abi;
+    const abi = JSON.parse(fs.readFileSync(path.join(exampleDir, `./build/${file}`), 'utf-8')) as Abi;
     const connection = getConnection();
     const payer = await newAccountWithLamports(connection);
     const program = Keypair.generate();

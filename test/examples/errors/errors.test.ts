@@ -1,6 +1,6 @@
 import expect from 'expect';
 import { Contract, TransactionError } from '../../../src';
-import { loadContract } from '../../utils';
+import { loadContract } from '../utils';
 
 describe('Errors', () => {
     let contract: Contract;

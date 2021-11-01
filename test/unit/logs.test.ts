@@ -2,7 +2,7 @@ import { Interface } from '@ethersproject/abi';
 import expect from 'expect';
 import { parseLogTopic, parseTxError, parseTxLogs } from '../../src/logs';
 
-describe('Logs', () => {
+describe('logs', () => {
     it('parses "Program return:" logs', async function () {
         const { encoded, computeUnitsUsed } = parseTxLogs([
             'Program CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif invoke [1]',
