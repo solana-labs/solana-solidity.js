@@ -14,6 +14,12 @@ import {
     TransactionInstruction,
 } from '@solana/web3.js';
 import {
+    InvalidProgramAccountError,
+    InvalidStorageAccountError,
+    MissingPayerAccountError,
+    MissingReturnDataError,
+} from './errors';
+import {
     EventListener,
     LogListener,
     LogsParser,
@@ -147,10 +153,10 @@ export class Contract {
      * @param payer   Payer for transactions and storage (defaults to the payer provided in the constructor)
      */
     async load(program: Signer, so: Buffer, payer?: Signer | null): Promise<void> {
-        if (!program.publicKey.equals(this.program)) throw new Error('INVALID_PROGRAM_ACCOUNT'); // @FIXME: add error types
+        if (!program.publicKey.equals(this.program)) throw new InvalidProgramAccountError();
 
         payer ||= this.payer;
-        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
+        if (!payer) throw new MissingPayerAccountError();
 
         // @TODO: error if the program already exists without sending a transaction
 
@@ -177,11 +183,11 @@ export class Contract {
         space: number,
         options?: ContractCallOptions
     ): Promise<ContractCallResult> {
-        if (!program.publicKey.equals(this.program)) throw new Error('INVALID_PROGRAM_ACCOUNT'); // @FIXME: add error types
-        if (!storage.publicKey.equals(this.storage)) throw new Error('INVALID_STORAGE_ACCOUNT'); // @FIXME: add error types
+        if (!program.publicKey.equals(this.program)) throw new InvalidProgramAccountError();
+        if (!storage.publicKey.equals(this.storage)) throw new InvalidStorageAccountError();
 
         const payer = options?.payer || this.payer;
-        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
+        if (!payer) throw new MissingPayerAccountError();
 
         const {
             accounts = [],
@@ -382,7 +388,7 @@ export class Contract {
         options?: ContractCallOptions
     ): Promise<T extends true ? any : ContractFunctionResult> {
         const payer = options?.payer || this.payer;
-        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
+        if (!payer) throw new MissingPayerAccountError();
 
         const {
             accounts = [],
@@ -470,7 +476,7 @@ export class Contract {
         let result: Result | null = null;
 
         if (length) {
-            if (!encoded) throw new Error('MISSING_RETURN_DATA'); // @FIXME: add error types
+            if (!encoded) throw new MissingReturnDataError();
             result = this.interface.decodeFunctionResult(fragment, encoded);
         }
 
