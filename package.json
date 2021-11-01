@@ -4,7 +4,7 @@
     "description": "Solana Solidity Contracts JavaScript Client",
     "license": "Apache-2.0",
     "engines": {
-        "node": ">= 10"
+        "node": ">= 14"
     },
     "publishConfig": {
         "access": "public"
