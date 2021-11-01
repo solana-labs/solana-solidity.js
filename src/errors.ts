@@ -1,26 +1,26 @@
 /** Base class for errors */
-export abstract class SolidityError extends Error {
+export abstract class ContractError extends Error {
     constructor(message?: string) {
         super(message);
     }
 }
 
 /** Thrown if @TODO: docs */
-export class InvalidProgramAccountError extends SolidityError {
+export class InvalidProgramAccountError extends ContractError {
     name = 'InvalidProgramAccountError';
 }
 
 /** Thrown if @TODO: docs */
-export class InvalidStorageAccountError extends SolidityError {
+export class InvalidStorageAccountError extends ContractError {
     name = 'InvalidStorageAccountError';
 }
 
 /** Thrown if @TODO: docs */
-export class MissingPayerAccountError extends SolidityError {
+export class MissingPayerAccountError extends ContractError {
     name = 'MissingPayerAccountError';
 }
 
 /** Thrown if @TODO: docs */
-export class MissingReturnDataError extends SolidityError {
+export class MissingReturnDataError extends ContractError {
     name = 'MissingReturnDataError';
 }
