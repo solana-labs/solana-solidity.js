@@ -67,7 +67,7 @@ export function encodeSeeds(seeds: Seed[]): Buffer {
 }
 
 /** @internal */
-export function numToPaddedHex(num: number) {
+export function numToPaddedHex(num: number): string {
     const str = num.toString(16);
     const pad = 16 > str.length ? '0'.repeat(16 - str.length) : '';
     return pad + str;

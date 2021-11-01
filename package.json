@@ -15,13 +15,15 @@
         "LICENSE",
         "README.md"
     ],
+    "type": "commonjs",
+    "sideEffects": false,
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
     "scripts": {
         "clean": "shx rm -rf lib",
         "build": "yarn clean && tsc",
         "watch": "yarn build -w",
-        "prepublishOnly": "yarn build --project tsconfig.publish.json",
+        "prepublishOnly": "yarn build",
         "docs": "shx rm -rf docs && NODE_OPTIONS=--max_old_space_size=4096 typedoc && shx cp .nojekyll docs/",
         "deploy:docs": "gh-pages --dist docs --dotfiles",
         "build:test": "./build-test-examples.sh",

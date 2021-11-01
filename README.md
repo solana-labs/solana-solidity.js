@@ -147,6 +147,7 @@ cd solana-solidity.js
 ```
 
 2. Install the dependencies:
+
 ```shell
 yarn install
 ```

@@ -72,7 +72,7 @@ export class LogsParser {
     }
 
     protected setupSubscription(): void {
-        this._subscriptionId ||= this._contract.connection.onLogs(this._contract.program, (logs, ctx) => {
+        this._subscriptionId ||= this._contract.connection.onLogs(this._contract.program, (logs) => {
             if (logs.err) return;
             for (const log of logs.logs) {
                 const eventData = parseLogTopic(log);
@@ -157,34 +157,39 @@ export async function sendAndConfirmTransactionWithLogs(
 }
 
 /** @internal */
-export function parseTxLogs(logs: string[]) {
+export function parseTxLogs(logs: string[]): {
+    encoded: Buffer | null;
+    computeUnitsUsed: number;
+    log: string | null;
+} {
     let encoded: Buffer | null = null;
     let computeUnitsUsed = 0;
     let log: string | null = null;
 
     for (const message of logs) {
-        // return
         const _encoded = parseLogReturn(message);
         if (_encoded) encoded = _encoded;
 
-        // failed to complete
         let _log = parseLogFailedToComplete(message);
         if (_log) log = _log;
 
-        // log
         _log = parseLogLog(message);
         if (_log) log = _log;
 
-        // compute units used
         const _computeUnitsUsed = parseLogComputeUnitsUsed(message);
         if (_computeUnitsUsed) computeUnitsUsed = _computeUnitsUsed;
     }
 
-    return { encoded, computeUnitsUsed, log }; // todo: better naming
+    return { encoded, computeUnitsUsed, log };
 }
 
 /** @internal */
-export function parseTxError(encoded: Buffer | null, computeUnitsUsed: number, log: string | null, logs: string[]) {
+export function parseTxError(
+    encoded: Buffer | null,
+    computeUnitsUsed: number,
+    log: string | null,
+    logs: string[]
+): TransactionError {
     let error: TransactionError;
 
     if (log) {
@@ -238,7 +243,7 @@ export function parseLogTopic(log: string): EventData | null {
 }
 
 /** @internal */
-export function parseLogReturn(log: string) {
+export function parseLogReturn(log: string): Buffer | null {
     if (log.startsWith(LOG_RETURN_PREFIX)) {
         const [, returnData] = log.slice(LOG_RETURN_PREFIX.length).split(' ');
         return Buffer.from(returnData, 'base64');
@@ -247,20 +252,20 @@ export function parseLogReturn(log: string) {
 }
 
 /** @internal */
-export function parseLogLog(log: string) {
+export function parseLogLog(log: string): string | null {
     if (log.startsWith(LOG_LOG_PREFIX)) return log.slice(LOG_LOG_PREFIX.length);
     return null;
 }
 
 /** @internal */
-export function parseLogComputeUnitsUsed(log: string) {
+export function parseLogComputeUnitsUsed(log: string): number | null {
     const computeUnitsUsedMatch = log.match(LOG_COMPUTE_UNITS_REGEX);
     if (computeUnitsUsedMatch) return Number(computeUnitsUsedMatch[1]);
     return null;
 }
 
 /** @internal */
-export function parseLogFailedToComplete(log: string) {
+export function parseLogFailedToComplete(log: string): string | null {
     if (log.startsWith(LOG_FAILED_TO_COMPLETE_PREFIX)) return log.slice(LOG_FAILED_TO_COMPLETE_PREFIX.length);
     return null;
 }
