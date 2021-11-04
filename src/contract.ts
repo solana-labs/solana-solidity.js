@@ -20,7 +20,7 @@ import {
     MissingReturnDataError,
 } from './errors';
 import { LogsParser, parseLogTopic, sendAndConfirmTransactionWithLogs, simulateTransactionWithLogs } from './logs';
-import { ABI, encodeSeeds, numToPaddedHex, ProgramDerivedAddress } from './utils';
+import { ABI, encodeSeeds, ProgramDerivedAddress } from './utils';
 
 /** Accounts, signers, and other parameters for calling a contract function or constructor */
 export interface ContractCallOptions {
@@ -30,7 +30,7 @@ export interface ContractCallOptions {
     programDerivedAddresses?: ProgramDerivedAddress[];
     signers?: Signer[];
     sender?: PublicKey | undefined;
-    value?: number;
+    value?: number | bigint;
     simulate?: boolean;
     confirmOptions?: ConfirmOptions;
 }
@@ -200,12 +200,18 @@ export class Contract {
         const input = this.interface.encodeDeploy(constructorArgs);
 
         const data = Buffer.concat([
-            this.storage.toBuffer(), //                     storage
-            sender.toBuffer(), //                           sender
-            Buffer.from(numToPaddedHex(value), 'hex'), //   value
-            Buffer.from(hash.substr(2, 8), 'hex'), //       hash
-            encodeSeeds(seeds), //                          seeds
-            Buffer.from(input.replace('0x', ''), 'hex'), // input
+            // storage account where state for this contract will be stored
+            this.storage.toBuffer(),
+            // msg.sender for this transaction
+            sender.toBuffer(),
+            // lamports to send to payable constructor
+            encodeU64(BigInt(value)),
+            // hash of contract name
+            Buffer.from(hash.substr(2, 8), 'hex'),
+            // PDA seeds
+            encodeSeeds(seeds),
+            // eth abi encoded constructor arguments
+            Buffer.from(input.replace('0x', ''), 'hex'),
         ]);
 
         const keys = [
@@ -389,12 +395,18 @@ export class Contract {
         const input = this.interface.encodeFunctionData(fragment, args);
 
         const data = Buffer.concat([
-            this.storage.toBuffer(), //                     storage
-            sender.toBuffer(), //                           sender
-            Buffer.from(numToPaddedHex(value), 'hex'), //   value
-            Buffer.from('00000000', 'hex'), //              hash
-            encodeSeeds(seeds), //                          seeds
-            Buffer.from(input.replace('0x', ''), 'hex'), // input
+            // storage account where state for this contract will be stored
+            this.storage.toBuffer(),
+            // msg.sender for this transaction
+            sender.toBuffer(),
+            // lamports to send to payable constructor
+            encodeU64(BigInt(value)),
+            // hash of contract name, 0 for function calls
+            Buffer.from('00000000', 'hex'),
+            // PDA seeds
+            encodeSeeds(seeds),
+            // eth abi encoded constructor arguments
+            Buffer.from(input.replace('0x', ''), 'hex'),
         ]);
 
         const keys = [
@@ -443,11 +455,11 @@ export class Contract {
             simulate || fragment.stateMutability === 'view' || fragment.stateMutability === 'pure'
                 ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
                 : await sendAndConfirmTransactionWithLogs(
-                      this.connection,
-                      transaction,
-                      [payer, ...signers],
-                      confirmOptions
-                  );
+                    this.connection,
+                    transaction,
+                    [payer, ...signers],
+                    confirmOptions
+                );
 
         const events = this.parseLogsEvents(logs);
 
@@ -462,4 +474,10 @@ export class Contract {
         if (returnResult) return result && length === 1 ? result[0] : result;
         return { result, logs, events, computeUnitsUsed };
     }
+}
+
+function encodeU64(num: bigint): Buffer {
+    const buf = Buffer.alloc(8);
+    buf.writeBigUInt64LE(num, 0);
+    return buf;
 }
