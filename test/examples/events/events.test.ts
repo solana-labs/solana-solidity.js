@@ -1,7 +1,7 @@
 import { LogDescription } from '@ethersproject/abi';
 import expect from 'expect';
 import { Contract } from '../../../src';
-import { loadContract } from '../../utils';
+import { loadContract } from '../utils';
 
 describe('Events', () => {
     let contract: Contract;

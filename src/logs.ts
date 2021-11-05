@@ -1,7 +1,8 @@
 import { defaultAbiCoder, LogDescription } from '@ethersproject/abi';
 import { hexDataSlice } from '@ethersproject/bytes';
 import { ConfirmOptions, Connection, Finality, sendAndConfirmTransaction, Signer, Transaction } from '@solana/web3.js';
-import { Contract } from './contract';
+import { Contract, EventListener, LogListener } from './contract';
+import { SimulationError } from './errors';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';
@@ -9,24 +10,6 @@ const LOG_COMPUTE_UNITS_REGEX = /consumed (\d+) of (\d+) compute units/i;
 const LOG_DATA_PREFIX = 'Program data: ';
 const LOG_FAILED_TO_COMPLETE_PREFIX = 'Program failed to complete: ';
 const LOG_FAILED_REGEX = /(Program \w+ )?failed: (.*)$/;
-
-// @TODO: docs
-export class TransactionError extends Error {
-    public logs: string[];
-    public computeUnitsUsed: number;
-
-    constructor(message: string) {
-        super(message);
-        this.logs = [];
-        this.computeUnitsUsed = 0;
-    }
-}
-
-// @TODO: docs
-export type EventListener = (event: LogDescription) => void;
-
-// @TODO: docs
-export type LogListener = (message: string) => void;
 
 /** @internal */
 export class LogsParser {
@@ -72,7 +55,7 @@ export class LogsParser {
     }
 
     protected setupSubscription(): void {
-        this._subscriptionId ||= this._contract.connection.onLogs(this._contract.program, (logs, ctx) => {
+        this._subscriptionId ||= this._contract.connection.onLogs(this._contract.program, (logs) => {
             if (logs.err) return;
             for (const log of logs.logs) {
                 const eventData = parseLogTopic(log);
@@ -122,12 +105,12 @@ export async function simulateTransactionWithLogs(
     transaction: Transaction,
     signers?: Signer[]
 ): Promise<LogsResult> {
-    const simulateTxResult = await connection.simulateTransaction(transaction, signers);
+    const result = await connection.simulateTransaction(transaction, signers);
 
-    const logs = simulateTxResult.value.logs ?? [];
-    const { log, encoded, computeUnitsUsed } = parseTxLogs(logs);
+    const logs = result.value.logs ?? [];
+    const { log, encoded, computeUnitsUsed } = parseTransactionLogs(logs);
 
-    if (simulateTxResult.value.err) throw parseTxError(encoded, computeUnitsUsed, log, logs);
+    if (result.value.err) throw parseSimulationError(encoded, computeUnitsUsed, log, logs);
 
     return { logs, encoded, computeUnitsUsed };
 }
@@ -148,64 +131,60 @@ export async function sendAndConfirmTransactionWithLogs(
     };
 
     const signature = await sendAndConfirmTransaction(connection, transaction, signers, confirmOptions);
-    const parsedTx = await connection.getParsedConfirmedTransaction(signature, finality);
+    const parsed = await connection.getParsedConfirmedTransaction(signature, finality);
 
-    const logs = parsedTx?.meta?.logMessages ?? [];
-    const { encoded, computeUnitsUsed } = parseTxLogs(logs);
+    const logs = parsed?.meta?.logMessages ?? [];
+    const { encoded, computeUnitsUsed } = parseTransactionLogs(logs);
 
     return { logs, encoded, computeUnitsUsed };
 }
 
 /** @internal */
-export function parseTxLogs(logs: string[]) {
+export function parseTransactionLogs(logs: string[]): {
+    encoded: Buffer | null;
+    computeUnitsUsed: number;
+    log: string | null;
+} {
     let encoded: Buffer | null = null;
     let computeUnitsUsed = 0;
     let log: string | null = null;
 
     for (const message of logs) {
-        // return
         const _encoded = parseLogReturn(message);
         if (_encoded) encoded = _encoded;
 
-        // failed to complete
         let _log = parseLogFailedToComplete(message);
         if (_log) log = _log;
 
-        // log
         _log = parseLogLog(message);
         if (_log) log = _log;
 
-        // compute units used
         const _computeUnitsUsed = parseLogComputeUnitsUsed(message);
         if (_computeUnitsUsed) computeUnitsUsed = _computeUnitsUsed;
     }
 
-    return { encoded, computeUnitsUsed, log }; // todo: better naming
+    return { encoded, computeUnitsUsed, log };
 }
 
 /** @internal */
-export function parseTxError(encoded: Buffer | null, computeUnitsUsed: number, log: string | null, logs: string[]) {
-    let error: TransactionError;
+export function parseSimulationError(
+    encoded: Buffer | null,
+    computeUnitsUsed: number,
+    log: string | null,
+    logs: string[]
+): SimulationError {
+    let error: SimulationError;
 
     if (log) {
-        error = new TransactionError(log);
+        error = new SimulationError(log);
+    } else if (!encoded) {
+        const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
+        error = failedMatch ? new SimulationError(failedMatch[2]) : new SimulationError('return data or log not set');
+    } else if (encoded.readUInt32BE(0) != 0x08c379a0) {
+        error = new SimulationError('signature not correct');
     } else {
-        if (!encoded) {
-            const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
-            if (failedMatch) {
-                error = new TransactionError(failedMatch[2]);
-            } else {
-                error = new TransactionError('return data or log not set');
-            }
-        }
-        // @FIXME: what does this do, should this be uncommented?
-        // else if (encoded?.readUInt32BE(0) != 0x08c379a0) {
-        //   txErr = new TransactionError('signature not correct');
-        // }
-        else {
-            const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
-            error = new TransactionError(revertReason.toString());
-        }
+        const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
+        error = new SimulationError(revertReason.toString());
     }
 
     error.logs = logs;
@@ -238,7 +217,7 @@ export function parseLogTopic(log: string): EventData | null {
 }
 
 /** @internal */
-export function parseLogReturn(log: string) {
+export function parseLogReturn(log: string): Buffer | null {
     if (log.startsWith(LOG_RETURN_PREFIX)) {
         const [, returnData] = log.slice(LOG_RETURN_PREFIX.length).split(' ');
         return Buffer.from(returnData, 'base64');
@@ -247,20 +226,20 @@ export function parseLogReturn(log: string) {
 }
 
 /** @internal */
-export function parseLogLog(log: string) {
+export function parseLogLog(log: string): string | null {
     if (log.startsWith(LOG_LOG_PREFIX)) return log.slice(LOG_LOG_PREFIX.length);
     return null;
 }
 
 /** @internal */
-export function parseLogComputeUnitsUsed(log: string) {
+export function parseLogComputeUnitsUsed(log: string): number | null {
     const computeUnitsUsedMatch = log.match(LOG_COMPUTE_UNITS_REGEX);
     if (computeUnitsUsedMatch) return Number(computeUnitsUsedMatch[1]);
     return null;
 }
 
 /** @internal */
-export function parseLogFailedToComplete(log: string) {
+export function parseLogFailedToComplete(log: string): string | null {
     if (log.startsWith(LOG_FAILED_TO_COMPLETE_PREFIX)) return log.slice(LOG_FAILED_TO_COMPLETE_PREFIX.length);
     return null;
 }

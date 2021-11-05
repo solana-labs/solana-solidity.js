@@ -14,22 +14,15 @@ import {
     TransactionInstruction,
 } from '@solana/web3.js';
 import {
-    EventListener,
-    LogListener,
-    LogsParser,
-    parseLogTopic,
-    sendAndConfirmTransactionWithLogs,
-    simulateTransactionWithLogs,
-} from './logs';
-import { Abi, encodeSeeds, numToPaddedHex } from './utils';
+    InvalidProgramAccountError,
+    InvalidStorageAccountError,
+    MissingPayerAccountError,
+    MissingReturnDataError,
+} from './errors';
+import { LogsParser, parseLogTopic, sendAndConfirmTransactionWithLogs, simulateTransactionWithLogs } from './logs';
+import { ABI, encodeSeeds, numToPaddedHex, ProgramDerivedAddress } from './utils';
 
-// @TODO: docs
-export interface ProgramDerivedAddress {
-    address: PublicKey;
-    seed: Buffer;
-}
-
-// @TODO: docs
+/** Accounts, signers, and other parameters for calling a contract function or constructor */
 export interface ContractCallOptions {
     payer?: Signer;
     accounts?: PublicKey[];
@@ -42,24 +35,30 @@ export interface ContractCallOptions {
     confirmOptions?: ConfirmOptions;
 }
 
-// @TODO: docs
+/** Result of a contract function or constructor call */
 export interface ContractCallResult {
     logs: string[];
     events: LogDescription[];
     computeUnitsUsed: number;
 }
 
-// @TODO: docs
+/** Result of a contract function call */
 export interface ContractFunctionResult extends ContractCallResult {
     result: Result | null;
 }
 
-// @TODO: docs
+/** Function that maps to a function declared in the contract ABI */
 export type ContractFunction = (...args: any[]) => Promise<ContractFunctionResult | any>;
+
+/** Callback function that will be called with decoded events */
+export type EventListener = (event: LogDescription) => void;
+
+/** Callback function that will be called with raw log messages */
+export type LogListener = (message: string) => void;
 
 /** A contract represents a Solidity contract that has been compiled with Solang to be deployed on Solana. */
 export class Contract {
-    /** @TODO: docs */
+    /** Functions that map to the functions declared in the contract ABI */
     readonly [name: string]: ContractFunction | any;
 
     /** Connection to use */
@@ -69,7 +68,7 @@ export class Contract {
     /** Account the program's data is stored at */
     readonly storage: PublicKey;
     /** Application Binary Interface in JSON form */
-    readonly abi: Abi;
+    readonly abi: ABI;
     /** Ethers.js interface parsed from the ABI */
     readonly interface: Interface;
     /** Callable functions mapped to the interface */
@@ -90,7 +89,7 @@ export class Contract {
      * @param abi        Application Binary Interface in JSON form
      * @param payer      Payer for transactions and storage (optional)
      */
-    constructor(connection: Connection, program: PublicKey, storage: PublicKey, abi: Abi, payer: Signer | null = null) {
+    constructor(connection: Connection, program: PublicKey, storage: PublicKey, abi: ABI, payer: Signer | null = null) {
         this.connection = connection;
         this.program = program;
         this.storage = storage;
@@ -147,12 +146,10 @@ export class Contract {
      * @param payer   Payer for transactions and storage (defaults to the payer provided in the constructor)
      */
     async load(program: Signer, so: Buffer, payer?: Signer | null): Promise<void> {
-        if (!program.publicKey.equals(this.program)) throw new Error('INVALID_PROGRAM_ACCOUNT'); // @FIXME: add error types
+        if (!program.publicKey.equals(this.program)) throw new InvalidProgramAccountError();
 
         payer ||= this.payer;
-        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
-
-        // @TODO: error if the program already exists without sending a transaction
+        if (!payer) throw new MissingPayerAccountError();
 
         await BpfLoader.load(this.connection, payer, program, so, BPF_LOADER_PROGRAM_ID);
     }
@@ -165,9 +162,9 @@ export class Contract {
      * @param program         Keypair for the account the program is located at
      * @param storage         Keypair for the account the program's data is stored at
      * @param space           Byte size to allocate for the storage account (this cannot be resized)
-     * @param options         @TODO: docs
+     * @param options         Accounts, signers, and other parameters for calling the contract constructor
      *
-     * @return @TODO: docs
+     * @return Result of the contract constructor call
      */
     async deploy(
         name: string,
@@ -177,11 +174,11 @@ export class Contract {
         space: number,
         options?: ContractCallOptions
     ): Promise<ContractCallResult> {
-        if (!program.publicKey.equals(this.program)) throw new Error('INVALID_PROGRAM_ACCOUNT'); // @FIXME: add error types
-        if (!storage.publicKey.equals(this.storage)) throw new Error('INVALID_STORAGE_ACCOUNT'); // @FIXME: add error types
+        if (!program.publicKey.equals(this.program)) throw new InvalidProgramAccountError();
+        if (!storage.publicKey.equals(this.storage)) throw new InvalidStorageAccountError();
 
         const payer = options?.payer || this.payer;
-        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
+        if (!payer) throw new MissingPayerAccountError();
 
         const {
             accounts = [],
@@ -199,41 +196,39 @@ export class Contract {
         } = options ?? {};
 
         const hash = keccak256(Buffer.from(name));
-        const seeds = programDerivedAddresses.map((pda) => pda.seed);
+        const seeds = programDerivedAddresses.map(({ seed }) => seed);
         const input = this.interface.encodeDeploy(constructorArgs);
 
         const data = Buffer.concat([
-            this.storage.toBuffer(), //                     storage @FIXME: these comments are kind of useless
-            sender.toBuffer(), //                           sender  @FIXME: better to explain why, not what
+            this.storage.toBuffer(), //                     storage
+            sender.toBuffer(), //                           sender
             Buffer.from(numToPaddedHex(value), 'hex'), //   value
             Buffer.from(hash.substr(2, 8), 'hex'), //       hash
             encodeSeeds(seeds), //                          seeds
             Buffer.from(input.replace('0x', ''), 'hex'), // input
         ]);
 
-        // @FIXME: why are so many of these keys commented out?
         const keys = [
-            // @FIXME: should all these PDAs really be writable?
-            // ...programDerivedAddresses.map((pubkey) => ({
-            //   pubkey,
-            //   isSigner: false,
-            //   isWritable: true,
-            // })),
+            ...programDerivedAddresses.map(({ address }) => ({
+                pubkey: address,
+                isSigner: false,
+                isWritable: true,
+            })),
             {
-                pubkey: storage.publicKey,
+                pubkey: this.storage,
                 isSigner: false,
                 isWritable: true,
             },
-            // {
-            //   pubkey: SYSVAR_CLOCK_PUBKEY,
-            //   isSigner: false,
-            //   isWritable: false,
-            // },
-            // {
-            //   pubkey: PublicKey.default,
-            //   isSigner: false,
-            //   isWritable: false,
-            // },
+            {
+                pubkey: SYSVAR_CLOCK_PUBKEY,
+                isSigner: false,
+                isWritable: false,
+            },
+            {
+                pubkey: PublicKey.default,
+                isSigner: false,
+                isWritable: false,
+            },
             ...accounts.map((pubkey) => ({
                 pubkey,
                 isSigner: false,
@@ -277,15 +272,6 @@ export class Contract {
     }
 
     /**
-     * Clone the contract. This creates a new contract with the same configuration but no log listeners.
-     *
-     * @return Clone of the contract
-     */
-    clone(): Contract {
-        return new Contract(this.connection, this.program, this.storage, this.abi, this.payer);
-    }
-
-    /**
      * Set the payer for transactions and storage
      *
      * @param payer Payer for transactions and storage
@@ -308,26 +294,6 @@ export class Contract {
     }
 
     /**
-     * Add a listener for log messages
-     *
-     * @param listener Callback for log messages
-     *
-     * @return ID of the listener (pass to `removeLogListener` to stop listening)
-     */
-    addLogListener(listener: LogListener): number {
-        return this.logs.addLogListener(listener);
-    }
-
-    /**
-     * Remove a listener for log messages
-     *
-     * @param listenerId ID of the listener (returned by `addLogListener`)
-     */
-    async removeLogListener(listenerId: number): Promise<void> {
-        return await this.logs.removeLogListener(listenerId);
-    }
-
-    /**
      * Add a listener for contract events
      *
      * @param listener Callback for contract events
@@ -345,6 +311,26 @@ export class Contract {
      */
     async removeEventListener(listenerId: number): Promise<void> {
         return await this.logs.removeEventListener(listenerId);
+    }
+
+    /**
+     * Add a listener for log messages
+     *
+     * @param listener Callback for log messages
+     *
+     * @return ID of the listener (pass to `removeLogListener` to stop listening)
+     */
+    addLogListener(listener: LogListener): number {
+        return this.logs.addLogListener(listener);
+    }
+
+    /**
+     * Remove a listener for log messages
+     *
+     * @param listenerId ID of the listener (returned by `addLogListener`)
+     */
+    async removeLogListener(listenerId: number): Promise<void> {
+        return await this.logs.removeLogListener(listenerId);
     }
 
     /** @internal */
@@ -382,7 +368,7 @@ export class Contract {
         options?: ContractCallOptions
     ): Promise<T extends true ? any : ContractFunctionResult> {
         const payer = options?.payer || this.payer;
-        if (!payer) throw new Error('MISSING_PAYER_ACCOUNT'); // @FIXME: add error types
+        if (!payer) throw new MissingPayerAccountError();
 
         const {
             accounts = [],
@@ -403,8 +389,8 @@ export class Contract {
         const input = this.interface.encodeFunctionData(fragment, args);
 
         const data = Buffer.concat([
-            this.storage.toBuffer(), //                     storage @FIXME: these comments are kind of useless
-            sender.toBuffer(), //                           sender  @FIXME: better to explain why, not what
+            this.storage.toBuffer(), //                     storage
+            sender.toBuffer(), //                           sender
             Buffer.from(numToPaddedHex(value), 'hex'), //   value
             Buffer.from('00000000', 'hex'), //              hash
             encodeSeeds(seeds), //                          seeds
@@ -412,7 +398,6 @@ export class Contract {
         ]);
 
         const keys = [
-            // @FIXME: should all these PDAs really be writable?
             ...programDerivedAddresses.map(({ address }) => ({
                 pubkey: address,
                 isSigner: false,
@@ -470,7 +455,7 @@ export class Contract {
         let result: Result | null = null;
 
         if (length) {
-            if (!encoded) throw new Error('MISSING_RETURN_DATA'); // @FIXME: add error types
+            if (!encoded) throw new MissingReturnDataError();
             result = this.interface.decodeFunctionResult(fragment, encoded);
         }
 

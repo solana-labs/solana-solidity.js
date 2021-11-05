@@ -2,11 +2,23 @@ import { JsonFragment } from '@ethersproject/abi';
 import { PublicKey } from '@solana/web3.js';
 import { randomBytes } from 'crypto';
 
-// @TODO: docs
-export type Abi = JsonFragment[];
+/** Application Binary Interface of a Solidity contract in JSON form */
+export type ABI = JsonFragment[];
 
-// @TODO: docs
-export async function createProgramAddress(program: PublicKey): Promise<{ address: PublicKey; seed: Buffer }> {
+/** PDA and the seed used to derive it */
+export interface ProgramDerivedAddress {
+    address: PublicKey;
+    seed: Buffer;
+}
+
+/**
+ * Create a Program Derived Address from a program ID and a random seed
+ *
+ * @param program Program ID to derive the PDA using
+ *
+ * @return PDA and the seed used to derive it
+ */
+export async function createProgramDerivedAddress(program: PublicKey): Promise<ProgramDerivedAddress> {
     // eslint-disable-next-line no-constant-condition
     while (true) {
         const seed = randomBytes(7);
@@ -15,6 +27,7 @@ export async function createProgramAddress(program: PublicKey): Promise<{ addres
         try {
             [address] = await PublicKey.findProgramAddress([seed], program);
         } catch (error) {
+            // If a valid PDA can't be found using the seed, generate another and try again
             continue;
         }
 
@@ -22,7 +35,13 @@ export async function createProgramAddress(program: PublicKey): Promise<{ addres
     }
 }
 
-// @TODO: docs
+/**
+ * Encode a public key as a hexadecimal string
+ *
+ * @param publicKey Public key to convert
+ *
+ * @return Hex-encoded public key
+ */
 export function publicKeyToHex(publicKey: PublicKey): string {
     return '0x' + publicKey.toBuffer().toString('hex');
 }
@@ -67,7 +86,7 @@ export function encodeSeeds(seeds: Seed[]): Buffer {
 }
 
 /** @internal */
-export function numToPaddedHex(num: number) {
+export function numToPaddedHex(num: number): string {
     const str = num.toString(16);
     const pad = 16 > str.length ? '0'.repeat(16 - str.length) : '';
     return pad + str;

@@ -1,10 +1,10 @@
 import { Interface } from '@ethersproject/abi';
 import expect from 'expect';
-import { parseLogTopic, parseTxError, parseTxLogs } from '../../src/logs';
+import { parseLogTopic, parseSimulationError, parseTransactionLogs } from '../../src/logs';
 
-describe('Logs', () => {
+describe('logs', () => {
     it('parses "Program return:" logs', async function () {
-        const { encoded, computeUnitsUsed } = parseTxLogs([
+        const { encoded, computeUnitsUsed } = parseTransactionLogs([
             'Program CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif invoke [1]',
             'Program CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif consumed 837 of 200000 compute units',
             'Program return: CwWevKx4bF1LKFdCXSJV7yxGaMZDkNCMpp1EhJEGkif AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABlNvbGFuYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -33,17 +33,17 @@ describe('Logs', () => {
             'Program return: 9cgeQC4fKNtL4vAk59UBjJwyAgXocDVwZCcnNq5gHrqk CMN5oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABNEbyB0aGUgcmV2ZXJ0IHRoaW5nAAAAAAAAAAAAAAAAAA==',
             'Program 9cgeQC4fKNtL4vAk59UBjJwyAgXocDVwZCcnNq5gHrqk failed: custom program error: 0x0',
         ];
-        const { encoded, computeUnitsUsed } = parseTxLogs(logs);
+        const { encoded, computeUnitsUsed } = parseTransactionLogs(logs);
         expect(computeUnitsUsed).toEqual(1023);
 
-        const err = parseTxError(encoded, computeUnitsUsed, null, logs);
+        const err = parseSimulationError(encoded, computeUnitsUsed, null, logs);
         expect(err.message).toBe('Do the revert thing');
         expect(err.computeUnitsUsed).toBe(1023);
         expect(err.logs.length).toBeGreaterThan(1);
     });
 
     it('parses "Program log:" logs', async function () {
-        const { computeUnitsUsed, log } = parseTxLogs([
+        const { computeUnitsUsed, log } = parseTransactionLogs([
             'Program D7Foi9gGkj3rQrUHNSg9GxWHMeVZsF8WptjZn5GFjJRV invoke [1]',
             'Program log: denominator should not be zero',
             'Program D7Foi9gGkj3rQrUHNSg9GxWHMeVZsF8WptjZn5GFjJRV consumed 1438 of 200000 compute units',
