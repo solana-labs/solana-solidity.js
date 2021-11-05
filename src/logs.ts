@@ -180,12 +180,9 @@ export function parseSimulationError(
     } else if (!encoded) {
         const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
         error = failedMatch ? new SimulationError(failedMatch[2]) : new SimulationError('return data or log not set');
-    }
-    // @FIXME: what does this do, should this be uncommented?
-    // else if (encoded.readUInt32BE(0) != 0x08c379a0) {
-    //   error = new TransactionError('signature not correct');
-    // }
-    else {
+    } else if (encoded.readUInt32BE(0) != 0x08c379a0) {
+        error = new SimulationError('signature not correct');
+    } else {
         const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
         error = new SimulationError(revertReason.toString());
     }

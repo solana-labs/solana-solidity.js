@@ -33,9 +33,8 @@ describe('ERC20', () => {
         expect(balance.toString()).toEqual(TOTAL_SUPPLY.toString());
     });
 
-    it('loads existing contract', async function () {
-        contract = contract.clone();
-
+    it('works with existing contract', async function () {
+        contract = new Contract(contract.connection, contract.program, contract.storage, contract.abi, contract.payer);
         const name = await contract.name();
         expect(name).toEqual('Solana');
     });

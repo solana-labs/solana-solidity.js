@@ -196,41 +196,39 @@ export class Contract {
         } = options ?? {};
 
         const hash = keccak256(Buffer.from(name));
-        const seeds = programDerivedAddresses.map((pda) => pda.seed);
+        const seeds = programDerivedAddresses.map(({ seed }) => seed);
         const input = this.interface.encodeDeploy(constructorArgs);
 
         const data = Buffer.concat([
-            this.storage.toBuffer(), //                     storage @FIXME: these comments are kind of useless
-            sender.toBuffer(), //                           sender  @FIXME: better to explain why, not what
+            this.storage.toBuffer(), //                     storage
+            sender.toBuffer(), //                           sender
             Buffer.from(numToPaddedHex(value), 'hex'), //   value
             Buffer.from(hash.substr(2, 8), 'hex'), //       hash
             encodeSeeds(seeds), //                          seeds
             Buffer.from(input.replace('0x', ''), 'hex'), // input
         ]);
 
-        // @FIXME: why are so many of these keys commented out?
         const keys = [
-            // @FIXME: should all these PDAs really be writable?
-            // ...programDerivedAddresses.map((pubkey) => ({
-            //   pubkey,
-            //   isSigner: false,
-            //   isWritable: true,
-            // })),
+            ...programDerivedAddresses.map(({ address }) => ({
+                pubkey: address,
+                isSigner: false,
+                isWritable: true,
+            })),
             {
-                pubkey: storage.publicKey,
+                pubkey: this.storage,
                 isSigner: false,
                 isWritable: true,
             },
-            // {
-            //   pubkey: SYSVAR_CLOCK_PUBKEY,
-            //   isSigner: false,
-            //   isWritable: false,
-            // },
-            // {
-            //   pubkey: PublicKey.default,
-            //   isSigner: false,
-            //   isWritable: false,
-            // },
+            {
+                pubkey: SYSVAR_CLOCK_PUBKEY,
+                isSigner: false,
+                isWritable: false,
+            },
+            {
+                pubkey: PublicKey.default,
+                isSigner: false,
+                isWritable: false,
+            },
             ...accounts.map((pubkey) => ({
                 pubkey,
                 isSigner: false,
@@ -293,15 +291,6 @@ export class Contract {
     disconnect(): this {
         this.payer = null;
         return this;
-    }
-
-    /**
-     * Clone the contract. This creates a new contract with the same configuration but no log listeners.
-     *
-     * @return Clone of the contract
-     */
-    clone(): Contract {
-        return new Contract(this.connection, this.program, this.storage, this.abi, this.payer);
     }
 
     /**
@@ -400,8 +389,8 @@ export class Contract {
         const input = this.interface.encodeFunctionData(fragment, args);
 
         const data = Buffer.concat([
-            this.storage.toBuffer(), //                     storage @FIXME: these comments are kind of useless
-            sender.toBuffer(), //                           sender  @FIXME: better to explain why, not what
+            this.storage.toBuffer(), //                     storage
+            sender.toBuffer(), //                           sender
             Buffer.from(numToPaddedHex(value), 'hex'), //   value
             Buffer.from('00000000', 'hex'), //              hash
             encodeSeeds(seeds), //                          seeds
@@ -409,7 +398,6 @@ export class Contract {
         ]);
 
         const keys = [
-            // @FIXME: should all these PDAs really be writable?
             ...programDerivedAddresses.map(({ address }) => ({
                 pubkey: address,
                 isSigner: false,
