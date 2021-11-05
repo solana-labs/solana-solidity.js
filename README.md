@@ -158,9 +158,10 @@ yarn install
 yarn build
 ```
 
-4. Pull this Docker image to run the tests:
+4. Pull these Docker images to build and run the tests:
 
 ```shell
+docker pull ghcr.io/hyperledger-labs/solang:latest
 docker pull solanalabs/solana:edge
 ```
 
@@ -170,7 +171,13 @@ docker pull solanalabs/solana:edge
 docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
 ```
 
-6. In another terminal window, run the tests:
+6. In another terminal window, compile the Solidity contracts used by the tests:
+
+```shell
+./build-test-examples.sh
+```
+
+7. Run the tests:
 
 ```shell
 yarn test
