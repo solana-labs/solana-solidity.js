@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { Contract, TransactionError } from '../../../src';
+import { Contract, SimulationError } from '../../../src';
 import { loadContract } from '../utils';
 
 describe('Errors', () => {
@@ -16,11 +16,11 @@ describe('Errors', () => {
 
         try {
             await contract.functions.doRevert(true);
-        } catch (_e) {
-            const e = _e as TransactionError;
-            expect(e.message).toBe('Do the revert thing');
-            expect(e.computeUnitsUsed).toBe(1047);
-            expect(e.logs.length).toBeGreaterThan(1);
+        } catch (error) {
+            if (!(error instanceof SimulationError)) throw error;
+            expect(error.message).toBe('Do the revert thing');
+            expect(error.computeUnitsUsed).toBe(1047);
+            expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
 
@@ -33,11 +33,11 @@ describe('Errors', () => {
 
         try {
             await contract.functions.doRequire(true);
-        } catch (_e) {
-            const e = _e as TransactionError;
-            expect(e.message).toBe('Do the require thing');
-            expect(e.computeUnitsUsed).toBe(776);
-            expect(e.logs.length).toBeGreaterThan(1);
+        } catch (error) {
+            if (!(error instanceof SimulationError)) throw error;
+            expect(error.message).toBe('Do the require thing');
+            expect(error.computeUnitsUsed).toBe(776);
+            expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
 
@@ -50,11 +50,11 @@ describe('Errors', () => {
 
         try {
             await contract.functions.doAssert(true);
-        } catch (_e) {
-            const e = _e as TransactionError;
-            expect(e.message).toBe('custom program error: 0x0');
-            expect(e.computeUnitsUsed).toBe(582);
-            expect(e.logs.length).toBeGreaterThan(1);
+        } catch (error) {
+            if (!(error instanceof SimulationError)) throw error;
+            expect(error.message).toBe('custom program error: 0x0');
+            expect(error.computeUnitsUsed).toBe(582);
+            expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
 
@@ -65,11 +65,11 @@ describe('Errors', () => {
         this.timeout(150000);
         try {
             await loadContract(__dirname, [true]);
-        } catch (_e) {
-            const e = _e as TransactionError;
-            expect(e.message).toBe('Do the revert thing');
-            expect(e.computeUnitsUsed).toBe(824);
-            expect(e.logs.length).toBeGreaterThan(1);
+        } catch (error) {
+            if (!(error instanceof SimulationError)) throw error;
+            expect(error.message).toBe('Do the revert thing');
+            expect(error.computeUnitsUsed).toBe(824);
+            expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
 
@@ -84,11 +84,11 @@ describe('Errors', () => {
 
         try {
             await contract.functions.divide(15, 0);
-        } catch (_e) {
-            const e = _e as TransactionError;
-            expect(e.message).toBe('divide by zero at instruction 592');
-            expect(e.computeUnitsUsed).toBe(476);
-            expect(e.logs.length).toBeGreaterThan(1);
+        } catch (error) {
+            if (!(error instanceof SimulationError)) throw error;
+            expect(error.message).toBe('divide by zero at instruction 592');
+            expect(error.computeUnitsUsed).toBe(476);
+            expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
 
@@ -102,11 +102,11 @@ describe('Errors', () => {
 
         try {
             await loadContract(__dirname, [false], 'Errors', 10);
-        } catch (_e) {
-            const e = _e as TransactionError;
-            expect(e.message).toBe('account data too small for instruction');
-            expect(e.computeUnitsUsed).toBe(232);
-            expect(e.logs.length).toBeGreaterThan(1);
+        } catch (error) {
+            if (!(error instanceof SimulationError)) throw error;
+            expect(error.message).toBe('account data too small for instruction');
+            expect(error.computeUnitsUsed).toBe(232);
+            expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
 

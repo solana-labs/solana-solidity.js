@@ -1,7 +1,8 @@
 import { defaultAbiCoder, LogDescription } from '@ethersproject/abi';
 import { hexDataSlice } from '@ethersproject/bytes';
 import { ConfirmOptions, Connection, Finality, sendAndConfirmTransaction, Signer, Transaction } from '@solana/web3.js';
-import { Contract } from './contract';
+import { Contract, EventListener, LogListener } from './contract';
+import { SimulationError } from './errors';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';
@@ -9,24 +10,6 @@ const LOG_COMPUTE_UNITS_REGEX = /consumed (\d+) of (\d+) compute units/i;
 const LOG_DATA_PREFIX = 'Program data: ';
 const LOG_FAILED_TO_COMPLETE_PREFIX = 'Program failed to complete: ';
 const LOG_FAILED_REGEX = /(Program \w+ )?failed: (.*)$/;
-
-// @TODO: docs
-export class TransactionError extends Error {
-    public logs: string[];
-    public computeUnitsUsed: number;
-
-    constructor(message: string) {
-        super(message);
-        this.logs = [];
-        this.computeUnitsUsed = 0;
-    }
-}
-
-// @TODO: docs
-export type EventListener = (event: LogDescription) => void;
-
-// @TODO: docs
-export type LogListener = (message: string) => void;
 
 /** @internal */
 export class LogsParser {
@@ -122,12 +105,12 @@ export async function simulateTransactionWithLogs(
     transaction: Transaction,
     signers?: Signer[]
 ): Promise<LogsResult> {
-    const simulateTxResult = await connection.simulateTransaction(transaction, signers);
+    const result = await connection.simulateTransaction(transaction, signers);
 
-    const logs = simulateTxResult.value.logs ?? [];
-    const { log, encoded, computeUnitsUsed } = parseTxLogs(logs);
+    const logs = result.value.logs ?? [];
+    const { log, encoded, computeUnitsUsed } = parseTransactionLogs(logs);
 
-    if (simulateTxResult.value.err) throw parseTxError(encoded, computeUnitsUsed, log, logs);
+    if (result.value.err) throw parseSimulationError(encoded, computeUnitsUsed, log, logs);
 
     return { logs, encoded, computeUnitsUsed };
 }
@@ -148,16 +131,16 @@ export async function sendAndConfirmTransactionWithLogs(
     };
 
     const signature = await sendAndConfirmTransaction(connection, transaction, signers, confirmOptions);
-    const parsedTx = await connection.getParsedConfirmedTransaction(signature, finality);
+    const parsed = await connection.getParsedConfirmedTransaction(signature, finality);
 
-    const logs = parsedTx?.meta?.logMessages ?? [];
-    const { encoded, computeUnitsUsed } = parseTxLogs(logs);
+    const logs = parsed?.meta?.logMessages ?? [];
+    const { encoded, computeUnitsUsed } = parseTransactionLogs(logs);
 
     return { logs, encoded, computeUnitsUsed };
 }
 
 /** @internal */
-export function parseTxLogs(logs: string[]): {
+export function parseTransactionLogs(logs: string[]): {
     encoded: Buffer | null;
     computeUnitsUsed: number;
     log: string | null;
@@ -184,33 +167,27 @@ export function parseTxLogs(logs: string[]): {
 }
 
 /** @internal */
-export function parseTxError(
+export function parseSimulationError(
     encoded: Buffer | null,
     computeUnitsUsed: number,
     log: string | null,
     logs: string[]
-): TransactionError {
-    let error: TransactionError;
+): SimulationError {
+    let error: SimulationError;
 
     if (log) {
-        error = new TransactionError(log);
-    } else {
-        if (!encoded) {
-            const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
-            if (failedMatch) {
-                error = new TransactionError(failedMatch[2]);
-            } else {
-                error = new TransactionError('return data or log not set');
-            }
-        }
-        // @FIXME: what does this do, should this be uncommented?
-        // else if (encoded?.readUInt32BE(0) != 0x08c379a0) {
-        //   txErr = new TransactionError('signature not correct');
-        // }
-        else {
-            const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
-            error = new TransactionError(revertReason.toString());
-        }
+        error = new SimulationError(log);
+    } else if (!encoded) {
+        const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
+        error = failedMatch ? new SimulationError(failedMatch[2]) : new SimulationError('return data or log not set');
+    }
+    // @FIXME: what does this do, should this be uncommented?
+    // else if (encoded.readUInt32BE(0) != 0x08c379a0) {
+    //   error = new TransactionError('signature not correct');
+    // }
+    else {
+        const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
+        error = new SimulationError(revertReason.toString());
     }
 
     error.logs = logs;

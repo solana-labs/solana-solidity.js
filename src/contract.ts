@@ -19,23 +19,10 @@ import {
     MissingPayerAccountError,
     MissingReturnDataError,
 } from './errors';
-import {
-    EventListener,
-    LogListener,
-    LogsParser,
-    parseLogTopic,
-    sendAndConfirmTransactionWithLogs,
-    simulateTransactionWithLogs,
-} from './logs';
-import { Abi, encodeSeeds, numToPaddedHex } from './utils';
+import { LogsParser, parseLogTopic, sendAndConfirmTransactionWithLogs, simulateTransactionWithLogs } from './logs';
+import { ABI, encodeSeeds, numToPaddedHex, ProgramDerivedAddress } from './utils';
 
-// @TODO: docs
-export interface ProgramDerivedAddress {
-    address: PublicKey;
-    seed: Buffer;
-}
-
-// @TODO: docs
+/** Accounts, signers, and other parameters for calling a contract function or constructor */
 export interface ContractCallOptions {
     payer?: Signer;
     accounts?: PublicKey[];
@@ -48,24 +35,30 @@ export interface ContractCallOptions {
     confirmOptions?: ConfirmOptions;
 }
 
-// @TODO: docs
+/** Result of a contract function or constructor call */
 export interface ContractCallResult {
     logs: string[];
     events: LogDescription[];
     computeUnitsUsed: number;
 }
 
-// @TODO: docs
+/** Result of a contract function call */
 export interface ContractFunctionResult extends ContractCallResult {
     result: Result | null;
 }
 
-// @TODO: docs
+/** Function that maps to a function declared in the contract ABI */
 export type ContractFunction = (...args: any[]) => Promise<ContractFunctionResult | any>;
+
+/** Callback function that will be called with decoded events */
+export type EventListener = (event: LogDescription) => void;
+
+/** Callback function that will be called with raw log messages */
+export type LogListener = (message: string) => void;
 
 /** A contract represents a Solidity contract that has been compiled with Solang to be deployed on Solana. */
 export class Contract {
-    /** @TODO: docs */
+    /** Functions that map to the functions declared in the contract ABI */
     readonly [name: string]: ContractFunction | any;
 
     /** Connection to use */
@@ -75,7 +68,7 @@ export class Contract {
     /** Account the program's data is stored at */
     readonly storage: PublicKey;
     /** Application Binary Interface in JSON form */
-    readonly abi: Abi;
+    readonly abi: ABI;
     /** Ethers.js interface parsed from the ABI */
     readonly interface: Interface;
     /** Callable functions mapped to the interface */
@@ -96,7 +89,7 @@ export class Contract {
      * @param abi        Application Binary Interface in JSON form
      * @param payer      Payer for transactions and storage (optional)
      */
-    constructor(connection: Connection, program: PublicKey, storage: PublicKey, abi: Abi, payer: Signer | null = null) {
+    constructor(connection: Connection, program: PublicKey, storage: PublicKey, abi: ABI, payer: Signer | null = null) {
         this.connection = connection;
         this.program = program;
         this.storage = storage;
@@ -158,8 +151,6 @@ export class Contract {
         payer ||= this.payer;
         if (!payer) throw new MissingPayerAccountError();
 
-        // @TODO: error if the program already exists without sending a transaction
-
         await BpfLoader.load(this.connection, payer, program, so, BPF_LOADER_PROGRAM_ID);
     }
 
@@ -171,9 +162,9 @@ export class Contract {
      * @param program         Keypair for the account the program is located at
      * @param storage         Keypair for the account the program's data is stored at
      * @param space           Byte size to allocate for the storage account (this cannot be resized)
-     * @param options         @TODO: docs
+     * @param options         Accounts, signers, and other parameters for calling the contract constructor
      *
-     * @return @TODO: docs
+     * @return Result of the contract constructor call
      */
     async deploy(
         name: string,

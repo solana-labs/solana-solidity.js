@@ -1,6 +1,6 @@
 import { Signer } from '@solana/web3.js';
 import expect from 'expect';
-import { Contract, createProgramAddress, ProgramDerivedAddress } from '../../../src';
+import { Contract, createProgramDerivedAddress, ProgramDerivedAddress } from '../../../src';
 import { loadContract } from '../utils';
 
 describe('ChildContract', () => {
@@ -15,7 +15,7 @@ describe('ChildContract', () => {
     });
 
     it('Creates child contract', async function () {
-        childPDA = await createProgramAddress(contract.program);
+        childPDA = await createProgramDerivedAddress(contract.program);
 
         const { logs } = await contract.functions.createChild({
             accounts: [contract.program],
