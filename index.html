@@ -83,9 +83,9 @@
 <pre><code class="language-shell"><span class="hl-0">yarn build</span>
 </code></pre>
 <ol start="4">
-<li>Pull this Docker image to run the tests:</li>
+<li>Pull these Docker images to build and run the tests:</li>
 </ol>
-<pre><code class="language-shell"><span class="hl-0">docker pull solanalabs/solana:edge</span>
+<pre><code class="language-shell"><span class="hl-0">docker pull ghcr.io/hyperledger-labs/solang:latest</span><br/><span class="hl-0">docker pull solanalabs/solana:edge</span>
 </code></pre>
 <ol start="5">
 <li>Start the test validator:</li>
@@ -93,7 +93,12 @@
 <pre><code class="language-shell"><span class="hl-0">docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge &gt; /dev/null</span>
 </code></pre>
 <ol start="6">
-<li>In another terminal window, run the tests:</li>
+<li>In another terminal window, compile the Solidity contracts used by the tests:</li>
+</ol>
+<pre><code class="language-shell"><span class="hl-0">./build-test-examples.sh</span>
+</code></pre>
+<ol start="7">
+<li>Run the tests:</li>
 </ol>
 <pre><code class="language-shell"><span class="hl-0">yarn </span><span class="hl-1">test</span>
 </code></pre>
