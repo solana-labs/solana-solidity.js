@@ -17,17 +17,16 @@ This is a short guide to deploying and interacting with the standard [ERC20](htt
 
 1. Install [Docker](https://docker.com) and [Node.js](https://nodejs.org) (version 14 or higher).
 
-2. Pull these Docker images to compile and deploy your contracts:
+2. Pull the Docker images to compile and deploy your contracts:
 
 ```shell
-docker pull ghcr.io/hyperledger-labs/solang:latest
-docker pull solanalabs/solana:edge
+yarn docker
 ```
 
 3. Start the Solana test validator:
 
 ```shell
-docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
+yarn validator
 ```
 
 4. In a new terminal window, initialize a project:
@@ -158,27 +157,21 @@ yarn install
 yarn build
 ```
 
-4. Pull these Docker images to build and run the tests:
+4. Pull the Docker images to build and run the tests:
 
 ```shell
-docker pull ghcr.io/hyperledger-labs/solang:latest
-docker pull solanalabs/solana:edge
+yarn docker
 ```
 
 5. Start the test validator:
 
 ```shell
-docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null
+yarn validator
 ```
 
-6. In another terminal window, compile the Solidity contracts used by the tests:
+6. In another terminal window, build and run the tests:
 
 ```shell
-./build-test-examples.sh
-```
-
-7. Run the tests:
-
-```shell
+yarn build:test
 yarn test
 ```
