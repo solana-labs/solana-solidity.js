@@ -14,7 +14,7 @@ describe('TxParams', () => {
         const { result, logs, computeUnitsUsed } = await contract.functions.sum([1, 2, 3]);
         expect(result.toString()).toBe('6');
         expect(logs.length).toBeGreaterThan(1);
-        expect(computeUnitsUsed).toBe(2612);
+        expect(computeUnitsUsed).toBe(2616);
     });
 
     it('works with tx params', async function () {
@@ -23,6 +23,6 @@ describe('TxParams', () => {
         });
         expect(result.toString()).toBe('6');
         expect(logs.length).toBeGreaterThan(1);
-        expect(computeUnitsUsed).toBe(2612);
+        expect(computeUnitsUsed).toBe(2616);
     });
 });
