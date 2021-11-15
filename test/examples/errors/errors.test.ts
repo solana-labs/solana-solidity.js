@@ -19,7 +19,8 @@ describe('Errors', () => {
         } catch (error) {
             if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('Do the revert thing');
-            expect(error.computeUnitsUsed).toBe(1051);
+            expect(error.computeUnitsUsed).toBeGreaterThan(1000);
+            expect(error.computeUnitsUsed).toBeLessThan(1100);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
@@ -36,7 +37,8 @@ describe('Errors', () => {
         } catch (error) {
             if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('Do the require thing');
-            expect(error.computeUnitsUsed).toBe(780);
+            expect(error.computeUnitsUsed).toBeGreaterThan(700);
+            expect(error.computeUnitsUsed).toBeLessThan(800);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
@@ -53,7 +55,8 @@ describe('Errors', () => {
         } catch (error) {
             if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('custom program error: 0x0');
-            expect(error.computeUnitsUsed).toBe(586);
+            expect(error.computeUnitsUsed).toBeGreaterThan(500);
+            expect(error.computeUnitsUsed).toBeLessThan(600);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
@@ -68,7 +71,8 @@ describe('Errors', () => {
         } catch (error) {
             if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('Do the revert thing');
-            expect(error.computeUnitsUsed).toBe(1066);
+            expect(error.computeUnitsUsed).toBeGreaterThan(1000);
+            expect(error.computeUnitsUsed).toBeLessThan(1100);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
@@ -87,7 +91,8 @@ describe('Errors', () => {
         } catch (error) {
             if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toMatch(/^divide by zero at instruction/);
-            expect(error.computeUnitsUsed).toBe(480);
+            expect(error.computeUnitsUsed).toBeGreaterThan(400);
+            expect(error.computeUnitsUsed).toBeLessThan(500);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
@@ -105,7 +110,8 @@ describe('Errors', () => {
         } catch (error) {
             if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('account data too small for instruction');
-            expect(error.computeUnitsUsed).toBe(474);
+            expect(error.computeUnitsUsed).toBeGreaterThan(400);
+            expect(error.computeUnitsUsed).toBeLessThan(500);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
