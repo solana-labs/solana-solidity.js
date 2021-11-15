@@ -1,21 +1,9 @@
 import { PublicKey } from '@solana/web3.js';
 import expect from 'expect';
 
-import { encodeSeeds, numToPaddedHex, publicKeyToHex } from '../../src/utils';
+import { encodeSeeds, publicKeyToHex } from '../../src/utils';
 
 describe('utils', () => {
-    it('numToPaddedHex works', async function () {
-        const cases = new Map([
-            [0, '0000000000000000'],
-            [1, '0000000000000001'],
-            [10, '000000000000000a'],
-            [15, '000000000000000f'],
-        ]);
-        for (const [num, hex] of cases.entries()) {
-            expect(numToPaddedHex(num)).toEqual(hex);
-        }
-    });
-
     it('pubKeyToHex works', async function () {
         const cases = new Map([
             [

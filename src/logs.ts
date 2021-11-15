@@ -1,6 +1,6 @@
 import { defaultAbiCoder, LogDescription } from '@ethersproject/abi';
 import { hexDataSlice } from '@ethersproject/bytes';
-import { ConfirmOptions, Connection, Finality, sendAndConfirmTransaction, Signer, Transaction } from '@solana/web3.js';
+import { ConfirmOptions, SendTransactionError, Connection, Finality, sendAndConfirmTransaction, Signer, Transaction } from '@solana/web3.js';
 import { Contract, EventListener, LogListener } from './contract';
 import { SimulationError } from './errors';
 
@@ -130,13 +130,26 @@ export async function sendAndConfirmTransactionWithLogs(
         ...confirmOptions,
     };
 
-    const signature = await sendAndConfirmTransaction(connection, transaction, signers, confirmOptions);
-    const parsed = await connection.getParsedConfirmedTransaction(signature, finality);
+    try {
+        const signature = await sendAndConfirmTransaction(connection, transaction, signers, confirmOptions);
+        const parsed = await connection.getParsedConfirmedTransaction(signature, finality);
 
-    const logs = parsed?.meta?.logMessages ?? [];
-    const { encoded, computeUnitsUsed } = parseTransactionLogs(logs);
+        const logs = parsed?.meta?.logMessages ?? [];
+        const { encoded, computeUnitsUsed } = parseTransactionLogs(logs);
 
-    return { logs, encoded, computeUnitsUsed };
+        return { logs, encoded, computeUnitsUsed };
+    }
+    catch (error) {
+        if (error instanceof SendTransactionError) {
+            if (error.logs && error.logs.length != 0) {
+                const { encoded, computeUnitsUsed } = parseTransactionLogs(error.logs);
+
+                throw parseSimulationError(encoded, computeUnitsUsed, null, error.logs);
+            }
+        }
+
+        throw error;
+    }
 }
 
 /** @internal */
