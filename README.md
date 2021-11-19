@@ -79,12 +79,10 @@ const BUNDLE_SO = readFileSync('./build/bundle.so');
     const connection = new Connection('http://localhost:8899', 'confirmed');
 
     const payer = Keypair.generate();
-    while (true) {
-        console.log('Airdropping SOL to a new wallet ...');
-        await connection.requestAirdrop(payer.publicKey, 1 * LAMPORTS_PER_SOL);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        if (await connection.getBalance(payer.publicKey)) break;
-    }
+
+    console.log('Airdropping SOL to a new wallet ...');
+    const signature = await connection.requestAirdrop(payer.publicKey, LAMPORTS_PER_SOL);
+    await connection.confirmTransaction(signature, 'confirmed');
 
     const address = publicKeyToHex(payer.publicKey);
     const program = Keypair.generate();

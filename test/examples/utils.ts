@@ -47,18 +47,10 @@ export function getConnection(rpcUrl?: string): Connection {
 export async function newAccountWithLamports(connection: Connection, lamports = 10000000000): Promise<Keypair> {
     const account = Keypair.generate();
 
-    let retries = 10;
-    await connection.requestAirdrop(account.publicKey, lamports);
-    for (;;) {
-        await sleep(500);
-        if (lamports == (await connection.getBalance(account.publicKey))) {
-            return account;
-        }
-        if (--retries <= 0) {
-            break;
-        }
-    }
-    throw new Error(`airdrop of ${lamports} failed`);
+    const signature = await connection.requestAirdrop(account.publicKey, lamports);
+    await connection.confirmTransaction(signature, 'confirmed');
+
+    return account;
 }
 
 export async function sleep(ms: number): Promise<void> {
