@@ -468,10 +468,16 @@ export class Contract {
 
         if (length) {
             if (!encoded) throw new MissingReturnDataError();
-            result = this.interface.decodeFunctionResult(fragment, encoded);
+
+            if (length == 1) {
+                [result] = this.interface.decodeFunctionResult(fragment, encoded);
+            } else {
+                result = this.interface.decodeFunctionResult(fragment, encoded);
+            }
         }
 
-        if (returnResult) return result && length === 1 ? result[0] : result;
+        if (returnResult === true)
+            return result as any;
         return { result, logs, events, computeUnitsUsed };
     }
 }
