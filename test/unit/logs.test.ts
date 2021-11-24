@@ -1,6 +1,6 @@
 import { Interface } from '@ethersproject/abi';
 import expect from 'expect';
-import { parseLogTopic, parseSimulationError, parseTransactionLogs } from '../../src/logs';
+import { parseLogTopic, parseTransactionError, parseTransactionLogs } from '../../src/logs';
 
 describe('logs', () => {
     it('parses "Program return:" logs', async function () {
@@ -38,7 +38,7 @@ describe('logs', () => {
         expect(computeUnitsUsed).toBeGreaterThan(1000);
         expect(computeUnitsUsed).toBeLessThan(1100);
 
-        const err = parseSimulationError(encoded, computeUnitsUsed, null, logs);
+        const err = parseTransactionError(encoded, computeUnitsUsed, null, logs);
         expect(err.message).toBe('Do the revert thing');
         expect(err.computeUnitsUsed).toBe(1023);
         expect(err.logs.length).toBeGreaterThan(1);

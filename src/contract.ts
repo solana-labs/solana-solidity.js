@@ -9,9 +9,11 @@ import {
     PublicKey,
     Signer,
     SystemProgram,
+    SYSVAR_INSTRUCTIONS_PUBKEY,
     SYSVAR_CLOCK_PUBKEY,
     Transaction,
     TransactionInstruction,
+    Ed25519Program,
 } from '@solana/web3.js';
 import {
     InvalidProgramAccountError,
@@ -32,7 +34,14 @@ export interface ContractCallOptions {
     sender?: PublicKey | undefined;
     value?: number | bigint;
     simulate?: boolean;
+    ed25519sigs?: Ed25519SigCheck[],
     confirmOptions?: ConfirmOptions;
+}
+
+export interface Ed25519SigCheck {
+    publicKey: PublicKey;
+    message: Uint8Array;
+    signature: Uint8Array;
 }
 
 /** Result of a contract function or constructor call */
@@ -188,6 +197,7 @@ export class Contract {
             sender = payer.publicKey,
             value = 0,
             simulate = false,
+            ed25519sigs = [],
             confirmOptions = {
                 commitment: 'confirmed',
                 skipPreflight: false,
@@ -249,7 +259,22 @@ export class Contract {
 
         const lamports = await this.connection.getMinimumBalanceForRentExemption(space, confirmOptions.commitment);
 
-        const transaction = new Transaction().add(
+        const transaction = new Transaction();
+
+        if (ed25519sigs.length > 0) {
+            keys.push({ pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false });
+
+            ed25519sigs.forEach(({ publicKey, message, signature }, index) => {
+                transaction.add(Ed25519Program.createInstructionWithPublicKey({
+                    instructionIndex: index,
+                    publicKey: publicKey.toBuffer(),
+                    message,
+                    signature,
+                }));
+            });
+        }
+
+        transaction.add(
             SystemProgram.createAccount({
                 fromPubkey: payer.publicKey,
                 newAccountPubkey: storage.publicKey,
@@ -384,6 +409,7 @@ export class Contract {
             sender = payer.publicKey,
             value = 0,
             simulate = false,
+            ed25519sigs = [],
             confirmOptions = {
                 commitment: 'confirmed',
                 skipPreflight: false,
@@ -442,7 +468,22 @@ export class Contract {
             })),
         ];
 
-        const transaction = new Transaction().add(
+        const transaction = new Transaction();
+
+        if (ed25519sigs.length > 0) {
+            keys.push({ pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false });
+
+            ed25519sigs.forEach(({ publicKey, message, signature }, index) => {
+                transaction.add(Ed25519Program.createInstructionWithPublicKey({
+                    instructionIndex: index,
+                    publicKey: publicKey.toBuffer(),
+                    message,
+                    signature,
+                }));
+            });
+        }
+
+        transaction.add(
             new TransactionInstruction({
                 keys,
                 programId: this.program,
@@ -468,10 +509,16 @@ export class Contract {
 
         if (length) {
             if (!encoded) throw new MissingReturnDataError();
-            result = this.interface.decodeFunctionResult(fragment, encoded);
+
+            if (length == 1) {
+                [result] = this.interface.decodeFunctionResult(fragment, encoded);
+            } else {
+                result = this.interface.decodeFunctionResult(fragment, encoded);
+            }
         }
 
-        if (returnResult) return result && length === 1 ? result[0] : result;
+        if (returnResult === true)
+            return result as any;
         return { result, logs, events, computeUnitsUsed };
     }
 }
