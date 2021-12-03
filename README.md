@@ -41,9 +41,9 @@ curl -o contracts/ERC20.sol \
 5. Compile the Solidity contract:
 
 ```shell
-docker run --rm -it -v $PWD:/project --entrypoint /bin/bash \
-       ghcr.io/hyperledger-labs/solang -c \
-       "solang /project/contracts/ERC20.sol -o /project/build --target solana -v"
+docker run --rm -it -v $PWD:/project \
+       ghcr.io/hyperledger-labs/solang \
+       -o /project/build --target solana -v /project/contracts/ERC20.sol
 ```
 
 This outputs `ERC20.abi` and `bundle.so` files to the `build` directory.
@@ -81,7 +81,7 @@ const BUNDLE_SO = readFileSync('./build/bundle.so');
     const payer = Keypair.generate();
 
     console.log('Airdropping SOL to a new wallet ...');
-    const signature = await connection.requestAirdrop(payer.publicKey, LAMPORTS_PER_SOL);
+    const signature = await connection.requestAirdrop(payer.publicKey, 10 * LAMPORTS_PER_SOL);
     await connection.confirmTransaction(signature, 'confirmed');
 
     const address = publicKeyToHex(payer.publicKey);
