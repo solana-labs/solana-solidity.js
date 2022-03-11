@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { Contract, TransactionError } from '../../../src';
+import { Contract, SimulationError } from '../../../src';
 import { loadContract } from '../utils';
 
 describe('Errors', () => {
@@ -17,7 +17,7 @@ describe('Errors', () => {
         try {
             await contract.functions.doRevert(true);
         } catch (error) {
-            if (!(error instanceof TransactionError)) throw error;
+            if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('Do the revert thing');
             expect(error.computeUnitsUsed).toBeGreaterThan(1000);
             expect(error.computeUnitsUsed).toBeLessThan(1100);
@@ -35,7 +35,7 @@ describe('Errors', () => {
         try {
             await contract.functions.doRequire(true);
         } catch (error) {
-            if (!(error instanceof TransactionError)) throw error;
+            if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('Do the require thing');
             expect(error.computeUnitsUsed).toBeGreaterThan(700);
             expect(error.computeUnitsUsed).toBeLessThan(800);
@@ -53,7 +53,7 @@ describe('Errors', () => {
         try {
             await contract.functions.doAssert(true);
         } catch (error) {
-            if (!(error instanceof TransactionError)) throw error;
+            if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('custom program error: 0x0');
             expect(error.computeUnitsUsed).toBeGreaterThan(500);
             expect(error.computeUnitsUsed).toBeLessThan(600);
@@ -69,7 +69,7 @@ describe('Errors', () => {
         try {
             await loadContract(__dirname, [true]);
         } catch (error) {
-            if (!(error instanceof TransactionError)) throw error;
+            if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('Do the revert thing');
             expect(error.computeUnitsUsed).toBeGreaterThan(1000);
             expect(error.computeUnitsUsed).toBeLessThan(1100);
@@ -89,7 +89,7 @@ describe('Errors', () => {
         try {
             await contract.functions.divide(15, 0);
         } catch (error) {
-            if (!(error instanceof TransactionError)) throw error;
+            if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toMatch(/^divide by zero at instruction/);
             expect(error.computeUnitsUsed).toBeGreaterThan(400);
             expect(error.computeUnitsUsed).toBeLessThan(500);
@@ -108,7 +108,7 @@ describe('Errors', () => {
         try {
             await loadContract(__dirname, [false], 'Errors', 10);
         } catch (error) {
-            if (!(error instanceof TransactionError)) throw error;
+            if (!(error instanceof SimulationError)) throw error;
             expect(error.message).toBe('account data too small for instruction');
             expect(error.computeUnitsUsed).toBeGreaterThan(400);
             expect(error.computeUnitsUsed).toBeLessThan(500);
