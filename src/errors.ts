@@ -6,7 +6,7 @@ export abstract class ContractError extends Error {
 }
 
 /** Thrown if transaction simulation fails */
-export class TransactionError extends ContractError {
+export class SimulationError extends ContractError {
     logs: string[];
     computeUnitsUsed: number;
     constructor(message?: string) {

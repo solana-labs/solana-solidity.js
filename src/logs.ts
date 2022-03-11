@@ -2,7 +2,7 @@ import { defaultAbiCoder, LogDescription } from '@ethersproject/abi';
 import { hexDataSlice } from '@ethersproject/bytes';
 import { ConfirmOptions, SendTransactionError, Connection, Finality, sendAndConfirmTransaction, Signer, Transaction } from '@solana/web3.js';
 import { Contract, EventListener, LogListener } from './contract';
-import { TransactionError } from './errors';
+import { SimulationError } from './errors';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';
@@ -110,7 +110,7 @@ export async function simulateTransactionWithLogs(
     const logs = result.value.logs ?? [];
     const { log, encoded, computeUnitsUsed } = parseTransactionLogs(logs);
 
-    if (result.value.err) throw parseTransactionError(encoded, computeUnitsUsed, log, logs);
+    if (result.value.err) throw parseSimulationError(encoded, computeUnitsUsed, log, logs);
 
     return { logs, encoded, computeUnitsUsed };
 }
@@ -144,7 +144,7 @@ export async function sendAndConfirmTransactionWithLogs(
             if (error.logs && error.logs.length != 0) {
                 const { encoded, computeUnitsUsed } = parseTransactionLogs(error.logs);
 
-                throw parseTransactionError(encoded, computeUnitsUsed, null, error.logs);
+                throw parseSimulationError(encoded, computeUnitsUsed, null, error.logs);
             }
         }
 
@@ -180,24 +180,24 @@ export function parseTransactionLogs(logs: string[]): {
 }
 
 /** @internal */
-export function parseTransactionError(
+export function parseSimulationError(
     encoded: Buffer | null,
     computeUnitsUsed: number,
     log: string | null,
     logs: string[]
-): TransactionError {
-    let error: TransactionError;
+): SimulationError {
+    let error: SimulationError;
 
     if (log) {
-        error = new TransactionError(log);
+        error = new SimulationError(log);
     } else if (!encoded) {
         const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
-        error = failedMatch ? new TransactionError(failedMatch[2]) : new TransactionError('return data or log not set');
+        error = failedMatch ? new SimulationError(failedMatch[2]) : new SimulationError('return data or log not set');
     } else if (encoded.readUInt32BE(0) != 0x08c379a0) {
-        error = new TransactionError('signature not correct');
+        error = new SimulationError('signature not correct');
     } else {
         const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
-        error = new TransactionError(revertReason.toString());
+        error = new SimulationError(revertReason.toString());
     }
 
     error.logs = logs;
