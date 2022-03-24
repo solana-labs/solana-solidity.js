@@ -17,19 +17,26 @@ This is a short guide to deploying and interacting with the standard [ERC20](htt
 
 1. Install [Docker](https://docker.com) and [Node.js](https://nodejs.org) (version 14 or higher).
 
-2. Pull the Docker images to compile and deploy your contracts:
+2. Clone the repositoy.
+
+```shell
+git clone https://github.com/solana-labs/solana-solidity.js.git
+cd solana-solidity.js
+```
+
+3. Pull the Docker images to compile and deploy your contracts:
 
 ```shell
 yarn docker
 ```
 
-3. Start the Solana test validator:
+4. Start the Solana test validator:
 
 ```shell
 yarn validator
 ```
 
-4. In a new terminal window, initialize a project:
+5. In a new terminal window, initialize a project:
 
 ```shell
 mkdir -p project/contracts project/build
@@ -38,7 +45,7 @@ curl -o contracts/ERC20.sol \
      https://raw.githubusercontent.com/solana-labs/solana-solidity.js/master/test/examples/erc20/contracts/ERC20.sol
 ```
 
-5. Compile the Solidity contract:
+6. Compile the Solidity contract:
 
 ```shell
 docker run --rm -it -v $PWD:/project \
@@ -48,7 +55,7 @@ docker run --rm -it -v $PWD:/project \
 
 This outputs `ERC20.abi` and `bundle.so` files to the `build` directory.
 
-6. Install the library:
+7. Install the library:
 
 ```shell
 yarn add @solana/solidity
@@ -58,13 +65,13 @@ yarn add @solana/solidity
 npm install @solana/solidity
 ```
 
-7. Create a script file to run:
+8. Create a script file to run:
 
 ```shell
 touch erc20.js
 ```
 
-8. Paste this code in the file and save it:
+9. Paste this code in the file and save it:
 
 ```js
 const { Connection, LAMPORTS_PER_SOL, Keypair } = require('@solana/web3.js');
@@ -128,7 +135,7 @@ const BUNDLE_SO = readFileSync('./build/bundle.so');
 })();
 ```
 
-9. Run the script to deploy and interact with your contract on Solana!
+10. Run the script to deploy and interact with your contract on Solana!
 
 ```
 node erc20.js
