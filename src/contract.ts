@@ -255,6 +255,11 @@ export class Contract {
                 isSigner: false,
                 isWritable: true,
             })),
+            ...signers.map((signer) => ({
+                pubkey: signer.publicKey,
+                isSigner: true,
+                isWritable: true,
+            })),
         ];
 
         const lamports = await this.connection.getMinimumBalanceForRentExemption(space, confirmOptions.commitment);
@@ -464,6 +469,11 @@ export class Contract {
             ...writableAccounts.map((pubkey) => ({
                 pubkey,
                 isSigner: false,
+                isWritable: true,
+            })),
+            ...signers.map((signer) => ({
+                pubkey: signer.publicKey,
+                isSigner: true,
                 isWritable: true,
             })),
         ];
