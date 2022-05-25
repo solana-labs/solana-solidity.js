@@ -38,7 +38,7 @@ describe('Errors', () => {
             if (!(error instanceof TransactionError)) throw error;
             expect(error.message).toBe('Do the require thing');
             expect(error.computeUnitsUsed).toBeGreaterThan(700);
-            expect(error.computeUnitsUsed).toBeLessThan(800);
+            expect(error.computeUnitsUsed).toBeLessThan(900);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }
