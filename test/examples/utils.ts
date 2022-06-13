@@ -27,7 +27,7 @@ export async function loadContract(exampleDir: string, constructorArgs: any[] = 
 
     const payerETHAddress = publicKeyToHex(payer.publicKey);
 
-    const { events } = await contract.deploy(name, constructorArgs, program, storage, space);
+    const { events } = await contract.deploy(name, constructorArgs, storage, space);
 
     return {
         connection,
