@@ -110,7 +110,6 @@ const BUNDLE_SO = readFileSync('./build/bundle.so');
     await contract.deploy(
         'ERC20',
         ['Solana', 'SOL', '1000000000000000000'],
-        program,
         storage,
         4096 * 8
     );

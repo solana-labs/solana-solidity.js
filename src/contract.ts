@@ -168,7 +168,6 @@ export class Contract {
      *
      * @param name            Name of the contract to deploy
      * @param constructorArgs Arguments to pass to the contract's Solidity constructor function
-     * @param program         Keypair for the account the program is located at
      * @param storage         Keypair for the account the program's data is stored at
      * @param space           Byte size to allocate for the storage account (this cannot be resized)
      * @param options         Accounts, signers, and other parameters for calling the contract constructor
@@ -178,12 +177,10 @@ export class Contract {
     async deploy(
         name: string,
         constructorArgs: any[],
-        program: Signer,
         storage: Signer,
         space: number,
         options?: ContractCallOptions
     ): Promise<ContractCallResult> {
-        if (!program.publicKey.equals(this.program)) throw new InvalidProgramAccountError();
         if (!storage.publicKey.equals(this.storage)) throw new InvalidStorageAccountError();
 
         const payer = options?.payer || this.payer;
