@@ -9,7 +9,7 @@ const LOG_LOG_PREFIX = 'Program log: ';
 const LOG_COMPUTE_UNITS_REGEX = /consumed (\d+) of (\d+) compute units/i;
 const LOG_DATA_PREFIX = 'Program data: ';
 const LOG_FAILED_TO_COMPLETE_PREFIX = 'Program failed to complete: ';
-const LOG_FAILED_REGEX = /(Program \w+ )?failed: (.*)$/;
+const LOG_FAILED_REGEX = /(Program \w+ )?(failed: )?(.*)$/;
 
 /** @internal */
 export class LogsParser {
@@ -192,7 +192,7 @@ export function parseTransactionError(
         error = new TransactionError(log);
     } else if (!encoded) {
         const failedMatch = logs[logs.length - 1].match(LOG_FAILED_REGEX);
-        error = failedMatch ? new TransactionError(failedMatch[2]) : new TransactionError('return data or log not set');
+        error = failedMatch ? new TransactionError(failedMatch[3]) : new TransactionError('return data or log not set');
     } else if (encoded.readUInt32BE(0) != 0x08c379a0) {
         error = new TransactionError('signature not correct');
     } else {
