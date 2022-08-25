@@ -2,7 +2,7 @@ name: test
 on: [push, pull_request]
 jobs:
   linux:
-    name: test
+    name: Test
     runs-on: ubuntu-latest
     steps:
     - name: Start solana

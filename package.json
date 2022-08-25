@@ -31,7 +31,7 @@
         "docs": "shx rm -rf docs && NODE_OPTIONS=--max_old_space_size=4096 typedoc && shx cp .nojekyll docs/",
         "deploy:docs": "gh-pages --dist docs --dotfiles",
         "build:test": "./build-test-examples.sh",
-        "test": "yarn test:unit; yarn test:examples",
+        "test": "yarn test:unit && yarn test:examples",
         "test:unit": "mocha test/unit/**/*.test.ts",
         "test:examples": "mocha test/examples/**/*.test.ts",
         "fmt": "prettier --write '{*,**/*}.{js,ts,jsx,tsx,json}'",
