@@ -38,7 +38,7 @@ describe('logs', () => {
         expect(computeUnitsUsed).toBeGreaterThan(1000);
         expect(computeUnitsUsed).toBeLessThan(1100);
 
-        const err = parseTransactionError(encoded, computeUnitsUsed, null, logs);
+        const err = parseTransactionError(encoded, computeUnitsUsed, null, logs, null);
         expect(err.message).toBe('Do the revert thing');
         expect(err.computeUnitsUsed).toBe(1023);
         expect(err.logs.length).toBeGreaterThan(1);
@@ -80,5 +80,24 @@ describe('logs', () => {
         expect(args[0].toString()).toEqual('500332');
         expect(args[1]).toEqual('0x41424344');
         expect(args[2]).toEqual('0xcafe0123');
+    });
+
+    it('Throw error message', async function () {
+        const logs = [
+            'Program 6aZJGCxKcMXpj4N47mpAf3TCUvzvwe9F2McQsbU3FZaK invoke [1]',
+            'Program 11111111111111111111111111111111 invoke [2]',
+            'Program 11111111111111111111111111111111 success',
+            'Program 6aZJGCxKcMXpj4N47mpAf3TCUvzvwe9F2McQsbU3FZaK consumed 2358 of 1400000 compute units',
+            'Program 6aZJGCxKcMXpj4N47mpAf3TCUvzvwe9F2McQsbU3FZaK success',
+        ];
+        const { encoded, computeUnitsUsed } = parseTransactionLogs(logs);
+        expect(computeUnitsUsed).toBeGreaterThan(1000);
+        expect(computeUnitsUsed).toBeLessThan(2500);
+
+        const err = parseTransactionError(encoded, computeUnitsUsed, null, logs, 'This is an error message');
+        console.log(err);
+        expect(err.message).toBe('This is an error message');
+        expect(err.computeUnitsUsed).toBe(2358);
+        expect(err.logs.length).toBeGreaterThan(1);
     });
 });

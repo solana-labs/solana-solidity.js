@@ -34,7 +34,7 @@ export interface ContractCallOptions {
     sender?: PublicKey | undefined;
     value?: number | bigint;
     simulate?: boolean;
-    ed25519sigs?: Ed25519SigCheck[],
+    ed25519sigs?: Ed25519SigCheck[];
     confirmOptions?: ConfirmOptions;
 }
 
@@ -267,12 +267,14 @@ export class Contract {
             keys.push({ pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false });
 
             ed25519sigs.forEach(({ publicKey, message, signature }, index) => {
-                transaction.add(Ed25519Program.createInstructionWithPublicKey({
-                    instructionIndex: index,
-                    publicKey: publicKey.toBuffer(),
-                    message,
-                    signature,
-                }));
+                transaction.add(
+                    Ed25519Program.createInstructionWithPublicKey({
+                        instructionIndex: index,
+                        publicKey: publicKey.toBuffer(),
+                        message,
+                        signature,
+                    })
+                );
             });
         }
 
@@ -481,12 +483,14 @@ export class Contract {
             keys.push({ pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false });
 
             ed25519sigs.forEach(({ publicKey, message, signature }, index) => {
-                transaction.add(Ed25519Program.createInstructionWithPublicKey({
-                    instructionIndex: index,
-                    publicKey: publicKey.toBuffer(),
-                    message,
-                    signature,
-                }));
+                transaction.add(
+                    Ed25519Program.createInstructionWithPublicKey({
+                        instructionIndex: index,
+                        publicKey: publicKey.toBuffer(),
+                        message,
+                        signature,
+                    })
+                );
             });
         }
 
@@ -503,11 +507,11 @@ export class Contract {
             simulate || fragment.stateMutability === 'view' || fragment.stateMutability === 'pure'
                 ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
                 : await sendAndConfirmTransactionWithLogs(
-                    this.connection,
-                    transaction,
-                    [payer, ...signers],
-                    confirmOptions
-                );
+                      this.connection,
+                      transaction,
+                      [payer, ...signers],
+                      confirmOptions
+                  );
 
         const events = this.parseLogsEvents(logs);
 
@@ -524,8 +528,7 @@ export class Contract {
             }
         }
 
-        if (returnResult === true)
-            return result as any;
+        if (returnResult === true) return result as any;
         return { result, logs, events, computeUnitsUsed };
     }
 }

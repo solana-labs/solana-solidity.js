@@ -17,12 +17,9 @@ describe('Signature Check', () => {
         const message = Buffer.from('Foobar');
         const signature = nacl.sign.detached(message, storage.secretKey);
 
-        const { result } = await contract.functions.verify(
-            publicKeyToHex(storage.publicKey), message, signature,
-            {
-                ed25519sigs: [{ publicKey: storage.publicKey, message, signature }],
-            }
-        );
+        const { result } = await contract.functions.verify(publicKeyToHex(storage.publicKey), message, signature, {
+            ed25519sigs: [{ publicKey: storage.publicKey, message, signature }],
+        });
 
         expect(result).toEqual(true);
     });
