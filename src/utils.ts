@@ -26,7 +26,6 @@ export async function createProgramDerivedAddress(program: PublicKey): Promise<P
         let address: PublicKey;
         try {
             address = await PublicKey.createProgramAddress([seed], program);
-
         } catch (error) {
             // If a valid PDA can't be found using the seed, generate another and try again
             continue;
