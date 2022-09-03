@@ -46,6 +46,22 @@ export function publicKeyToHex(publicKey: PublicKey): string {
     return '0x' + publicKey.toBuffer().toString('hex');
 }
 
+/**
+ * Decode a public key from a hexadeciaml string
+ * 
+ * @param hex The hexadecimal string
+ * 
+ * @returns The correspoding Publick Key
+ */
+export function HexToPublicKey(hex: string) : PublicKey {
+    let new_string = hex.substring(2);
+    let bytes = [];
+    for(let c = 0; c < new_string.length; c+= 2) {
+        bytes.push(parseInt(new_string.substring(c, c+2), 16));
+    }
+    return new PublicKey(bytes);
+}
+
 /** @internal */
 export type Seed = string | PublicKey | Uint8Array | Buffer;
 

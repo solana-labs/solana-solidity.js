@@ -1,7 +1,8 @@
-import { PublicKey } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@solana/web3.js';
+import { assert } from 'console';
 import expect from 'expect';
 
-import { encodeSeeds, publicKeyToHex } from '../../src/utils';
+import { encodeSeeds, HexToPublicKey, publicKeyToHex } from '../../src/utils';
 
 describe('utils', () => {
     it('pubKeyToHex works', async function () {
@@ -39,5 +40,12 @@ describe('utils', () => {
         expect(encodeSeeds([new PublicKey('G5j33ePDCSZddCogbXqffse9aMrj5684EXJHWfXB7W8K')]).toString('hex')).toEqual(
             '0120e01528146c7b580018be6bcfaf1d3ca0deb2e145abf912f8a4a82eec6e399f0c'
         );
+    });
+
+    it('Decode Hex String', async function () {
+        const pubkey = Keypair.generate();
+        const string_hex = publicKeyToHex(pubkey.publicKey);
+        const retrieved_key = HexToPublicKey(string_hex);
+        expect(pubkey.publicKey).toEqual(retrieved_key);
     });
 });
