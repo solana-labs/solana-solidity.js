@@ -4,6 +4,7 @@ import expect from 'expect';
 
 import { Contract, publicKeyToHex } from '../../../src';
 import { loadContract } from '../utils';
+import { decode } from 'bs58';
 
 const NAME = 'Solana';
 const SYMBOL = 'SOL';
@@ -43,7 +44,9 @@ describe('ERC20', () => {
         const otherAccount = publicKeyToHex(Keypair.generate().publicKey);
         const transferAmount = 9;
 
-        await contract.transfer(otherAccount, transferAmount);
+        const { signature } = await contract.functions.transfer(otherAccount, transferAmount);
+
+        expect(decode(signature).length).toBe(64);
 
         const otherAccountBalance = await contract.balanceOf(otherAccount);
         expect(otherAccountBalance.toString()).toEqual(transferAmount.toString());
