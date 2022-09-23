@@ -49,6 +49,7 @@ export interface ContractCallResult {
     logs: string[];
     events: LogDescription[];
     computeUnitsUsed: number;
+    signature: string | null;
 }
 
 /** Result of a contract function call */
@@ -293,7 +294,7 @@ export class Contract {
             })
         );
 
-        const { logs, computeUnitsUsed } = simulate
+        const { logs, computeUnitsUsed, signature } = simulate
             ? await simulateTransactionWithLogs(this.connection, transaction, [payer, storage, ...signers])
             : await sendAndConfirmTransactionWithLogs(this.connection, transaction, [payer, storage, ...signers]);
 
@@ -303,6 +304,7 @@ export class Contract {
             logs,
             events,
             computeUnitsUsed,
+            signature,
         };
     }
 
@@ -503,15 +505,15 @@ export class Contract {
         );
 
         // If the function is read-only, simulate the transaction to get the result
-        const { logs, encoded, computeUnitsUsed } =
+        const { logs, encoded, computeUnitsUsed, signature } =
             simulate || fragment.stateMutability === 'view' || fragment.stateMutability === 'pure'
                 ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
                 : await sendAndConfirmTransactionWithLogs(
-                      this.connection,
-                      transaction,
-                      [payer, ...signers],
-                      confirmOptions
-                  );
+                    this.connection,
+                    transaction,
+                    [payer, ...signers],
+                    confirmOptions
+                );
 
         const events = this.parseLogsEvents(logs);
 
@@ -529,7 +531,7 @@ export class Contract {
         }
 
         if (returnResult === true) return result as any;
-        return { result, logs, events, computeUnitsUsed };
+        return { result, logs, events, computeUnitsUsed, signature };
     }
 }
 
