@@ -29,7 +29,7 @@ describe('ChildContract', () => {
         console.log('info: ' + info);
     });
 
-    xit('Reads child contract', async function () {
+    it('Reads child contract', async function () {
         const {
             logs,
             result: [value],
@@ -42,7 +42,7 @@ describe('ChildContract', () => {
         expect(value.toString()).toEqual('0');
     });
 
-    xit('Updates child contract', async function () {
+    it('Updates child contract', async function () {
         const { logs: logs1 } = await contract.functions.updateChild(2, {
             accounts: [childPDA.address],
             writableAccounts: [contract.program],
