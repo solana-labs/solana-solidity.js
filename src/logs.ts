@@ -204,8 +204,8 @@ export function parseTransactionError(
         error = failedMatch
             ? new TransactionError(failedMatch[2])
             : message
-                ? new TransactionError(message)
-                : new TransactionError('return data or log not set');
+            ? new TransactionError(message)
+            : new TransactionError('return data or log not set');
     } else if (encoded.readUInt32BE(0) != 0x08c379a0) {
         error = new TransactionError('signature not correct');
     } else {
