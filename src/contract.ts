@@ -509,11 +509,11 @@ export class Contract {
             simulate || fragment.stateMutability === 'view' || fragment.stateMutability === 'pure'
                 ? await simulateTransactionWithLogs(this.connection, transaction, [payer, ...signers])
                 : await sendAndConfirmTransactionWithLogs(
-                    this.connection,
-                    transaction,
-                    [payer, ...signers],
-                    confirmOptions
-                );
+                      this.connection,
+                      transaction,
+                      [payer, ...signers],
+                      confirmOptions
+                  );
 
         const events = this.parseLogsEvents(logs);
 
