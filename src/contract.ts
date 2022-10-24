@@ -223,16 +223,16 @@ export class Contract {
         ]);
 
         const keys = [
-            ...programDerivedAddresses.map(({ address }) => ({
-                pubkey: address,
-                isSigner: false,
-                isWritable: true,
-            })),
             {
                 pubkey: this.storage,
                 isSigner: false,
                 isWritable: true,
             },
+            ...programDerivedAddresses.map(({ address }) => ({
+                pubkey: address,
+                isSigner: false,
+                isWritable: true,
+            })),
             {
                 pubkey: SYSVAR_CLOCK_PUBKEY,
                 isSigner: false,
@@ -442,16 +442,16 @@ export class Contract {
         ]);
 
         const keys = [
-            ...programDerivedAddresses.map(({ address }) => ({
-                pubkey: address,
-                isSigner: false,
-                isWritable: true,
-            })),
             {
                 pubkey: this.storage,
                 isSigner: false,
                 isWritable: true,
             },
+            ...programDerivedAddresses.map(({ address }) => ({
+                pubkey: address,
+                isSigner: false,
+                isWritable: true,
+            })),
             {
                 pubkey: SYSVAR_CLOCK_PUBKEY,
                 isSigner: false,

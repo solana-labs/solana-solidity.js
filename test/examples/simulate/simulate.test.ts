@@ -15,7 +15,7 @@ describe('Simulate', () => {
         expect(result.toString()).toBe('3');
         expect(logs.length).toBeGreaterThan(1);
         expect(computeUnitsUsed).toBeGreaterThan(1500);
-        expect(computeUnitsUsed).toBeLessThan(1600);
+        expect(computeUnitsUsed).toBeLessThan(2000);
 
         try {
             await contract.functions.div(1, 0, { simulate: true }); // @FIXME: how do we ensure this is testing simulation?

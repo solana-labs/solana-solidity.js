@@ -1,5 +1,4 @@
 import { Keypair, PublicKey } from '@solana/web3.js';
-import { assert } from 'console';
 import expect from 'expect';
 
 import { encodeSeeds, HexToPublicKey, publicKeyToHex } from '../../src/utils';
