@@ -1,6 +1,6 @@
 # `@solana/solidity`
 
-The [Solang Compiler](https://github.com/hyperledger-labs/solang) compiles Solidity contracts to native Solana BPF programs.
+The [Solang Compiler](https://github.com/hyperledger/solang) compiles Solidity contracts to native Solana BPF programs.
 
 This TypeScript library, inspired by [Ethers.js](https://github.com/ethers-io/ethers.js), can deploy and interact with Solidity contracts on Solana.
 
@@ -49,7 +49,7 @@ curl -o contracts/ERC20.sol \
 
 ```shell
 docker run --rm -it -v $PWD:/project \
-       ghcr.io/hyperledger-labs/solang \
+       ghcr.io/hyperledger/solang \
        -o /project/build --target solana -v /project/contracts/ERC20.sol
 ```
 

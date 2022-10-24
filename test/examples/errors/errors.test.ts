@@ -72,7 +72,7 @@ describe('Errors', () => {
             if (!(error instanceof TransactionError)) throw error;
             expect(error.message).toBe('Do the revert thing');
             expect(error.computeUnitsUsed).toBeGreaterThan(1000);
-            expect(error.computeUnitsUsed).toBeLessThan(1100);
+            expect(error.computeUnitsUsed).toBeLessThan(1200);
             expect(error.logs.length).toBeGreaterThan(1);
             return;
         }

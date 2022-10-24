@@ -15,7 +15,7 @@ describe('TxParams', () => {
         expect(result.toString()).toBe('6');
         expect(logs.length).toBeGreaterThan(1);
         expect(computeUnitsUsed).toBeGreaterThan(2600);
-        expect(computeUnitsUsed).toBeLessThan(2650);
+        expect(computeUnitsUsed).toBeLessThan(3200);
     });
 
     it('works with tx params', async function () {
@@ -25,6 +25,6 @@ describe('TxParams', () => {
         expect(result.toString()).toBe('6');
         expect(logs.length).toBeGreaterThan(1);
         expect(computeUnitsUsed).toBeGreaterThan(2600);
-        expect(computeUnitsUsed).toBeLessThan(2650);
+        expect(computeUnitsUsed).toBeLessThan(3200);
     });
 });
