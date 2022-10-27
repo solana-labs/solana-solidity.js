@@ -42,14 +42,17 @@
         "validator": "docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null"
     },
     "dependencies": {
+        "@dao-xyz/borsh": "^3.3.0",
         "@ethersproject/abi": "^5.5.0",
         "@ethersproject/bytes": "^5.5.0",
         "@ethersproject/keccak256": "^5.5.0",
         "@ethersproject/properties": "^5.5.0",
-        "@solana/web3.js": "^1.30.2"
+        "@solana/web3.js": "^1.30.2",
+        "bn.js": "^5.2.1"
     },
     "devDependencies": {
         "@ethersproject/contracts": "^5.5.0",
+        "@types/bs58": "^4.0.1",
         "@types/eslint": "^7.28.2",
         "@types/eslint-plugin-prettier": "^3.1.0",
         "@types/mocha": "^9.0.0",
@@ -68,7 +71,6 @@
         "ts-node": "^10.4.0",
         "tslib": "^2.3.1",
         "typedoc": "^0.22.7",
-        "typescript": "^4.4.4",
-        "@types/bs58": "^4.0.1"
+        "typescript": "^4.4.4"
     }
 }

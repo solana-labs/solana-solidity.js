@@ -1,5 +1,4 @@
-import { defaultAbiCoder, LogDescription } from '@ethersproject/abi';
-import { hexDataSlice } from '@ethersproject/bytes';
+import { LogDescription, ParamType } from '@ethersproject/abi';
 import {
     ConfirmOptions,
     SendTransactionError,
@@ -11,6 +10,7 @@ import {
 } from '@solana/web3.js';
 import { Contract, EventListener, LogListener } from './contract';
 import { TransactionError } from './errors';
+import { borshDecode } from './borsh';
 
 const LOG_RETURN_PREFIX = 'Program return: ';
 const LOG_LOG_PREFIX = 'Program log: ';
@@ -206,11 +206,12 @@ export function parseTransactionError(
             : message
             ? new TransactionError(message)
             : new TransactionError('return data or log not set');
-    } else if (encoded.readUInt32BE(0) != 0x08c379a0) {
+    } else if (encoded.readUInt32LE(0) != 0x08c379a0) {
         error = new TransactionError('signature not correct');
     } else {
-        const revertReason = defaultAbiCoder.decode(['string'], hexDataSlice(encoded, 4));
-        error = new TransactionError(revertReason.toString());
+        const params = [ParamType.from('uint32'), ParamType.fromString('string')];
+        const revertReason = borshDecode(params, encoded);
+        error = new TransactionError(revertReason[1]);
     }
 
     error.logs = logs;

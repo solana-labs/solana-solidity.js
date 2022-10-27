@@ -1,7 +1,7 @@
 import { Keypair } from '@solana/web3.js';
 import expect from 'expect';
 import nacl from 'tweetnacl';
-import { Contract, publicKeyToHex } from '../../../src';
+import { Contract } from '../../../src';
 import { loadContract } from '../utils';
 
 describe('Signature Check', () => {
@@ -17,7 +17,7 @@ describe('Signature Check', () => {
         const message = Buffer.from('Foobar');
         const signature = nacl.sign.detached(message, storage.secretKey);
 
-        const { result } = await contract.functions.verify(publicKeyToHex(storage.publicKey), message, signature, {
+        const { result } = await contract.functions.verify(storage.publicKey.toBytes(), message, signature, {
             ed25519sigs: [{ publicKey: storage.publicKey, message, signature }],
         });
 

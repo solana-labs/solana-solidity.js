@@ -12,7 +12,7 @@ describe('Named Returns', () => {
 
     it('work', async function () {
         const {
-            result: { a, b },
+            result: [a, b],
         } = await contract.functions.noop(1, 2);
         expect(a.toString()).toEqual('1');
         expect(b.toString()).toEqual('2');

@@ -1,7 +1,7 @@
-import { Connection, Keypair } from '@solana/web3.js';
+import { Connection, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import fs from 'fs';
 import path from 'path';
-import { ABI, Contract, publicKeyToHex } from '../../src';
+import { ABI, Contract } from '../../src';
 
 const DEFAULT_URL = 'http://localhost:8899';
 
@@ -25,7 +25,7 @@ export async function loadContract(exampleDir: string, constructorArgs: any[] = 
 
     await contract.load(program, so, payer);
 
-    const payerETHAddress = publicKeyToHex(payer.publicKey);
+    const payerETHAddress = payer.publicKey;
 
     const { events } = await contract.deploy(name, constructorArgs, storage, space);
 
@@ -41,13 +41,22 @@ export async function loadContract(exampleDir: string, constructorArgs: any[] = 
 }
 
 export function getConnection(rpcUrl?: string): Connection {
-    return new Connection(rpcUrl || process.env.RPC_URL || DEFAULT_URL, 'confirmed');
+    return new Connection(rpcUrl || process.env.RPC_URL || DEFAULT_URL, {
+        commitment: 'confirmed',
+        confirmTransactionInitialTimeout: 100000,
+    });
 }
 
-export async function newAccountWithLamports(connection: Connection, lamports = 10000000000): Promise<Keypair> {
+export async function newAccountWithLamports(connection: Connection): Promise<Keypair> {
     const account = Keypair.generate();
 
-    const signature = await connection.requestAirdrop(account.publicKey, lamports);
+    let signature = await connection.requestAirdrop(account.publicKey, LAMPORTS_PER_SOL);
+    await connection.confirmTransaction(signature, 'confirmed');
+    signature = await connection.requestAirdrop(account.publicKey, LAMPORTS_PER_SOL);
+    await connection.confirmTransaction(signature, 'confirmed');
+    signature = await connection.requestAirdrop(account.publicKey, LAMPORTS_PER_SOL);
+    await connection.confirmTransaction(signature, 'confirmed');
+    signature = await connection.requestAirdrop(account.publicKey, LAMPORTS_PER_SOL);
     await connection.confirmTransaction(signature, 'confirmed');
 
     return account;

@@ -1,8 +1,8 @@
 import { LogDescription } from '@ethersproject/abi';
-import { Keypair } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@solana/web3.js';
 import expect from 'expect';
 
-import { Contract, publicKeyToHex } from '../../../src';
+import { Contract } from '../../../src';
 import { loadContract } from '../utils';
 import { decode } from 'bs58';
 
@@ -12,12 +12,14 @@ const TOTAL_SUPPLY = 10000;
 
 describe('ERC20', () => {
     let contract: Contract;
-    let payerETHAddress: string;
+    let payerETHAddress: PublicKey;
 
-    it('deploys new contract', async function () {
+    before(async function () {
         this.timeout(150000);
         ({ contract, payerETHAddress } = await loadContract(__dirname, [NAME, SYMBOL, TOTAL_SUPPLY]));
+    });
 
+    it('deploys new contract', async function () {
         const name = await contract.name();
         expect(name).toEqual(NAME);
 
@@ -30,7 +32,7 @@ describe('ERC20', () => {
         const supply = await contract.totalSupply();
         expect(supply.toString()).toEqual(TOTAL_SUPPLY.toString());
 
-        const balance = await contract.balanceOf(payerETHAddress);
+        const balance = await contract.balanceOf(payerETHAddress.toBytes());
         expect(balance.toString()).toEqual(TOTAL_SUPPLY.toString());
     });
 
@@ -41,23 +43,23 @@ describe('ERC20', () => {
     });
 
     it('mutates contract state', async function () {
-        const otherAccount = publicKeyToHex(Keypair.generate().publicKey);
+        const otherAccount = Keypair.generate().publicKey;
         const transferAmount = 9;
 
-        const { signature } = await contract.functions.transfer(otherAccount, transferAmount);
+        const { signature } = await contract.functions.transfer(otherAccount.toBytes(), transferAmount);
 
         expect(decode(signature).length).toBe(64);
 
-        const otherAccountBalance = await contract.balanceOf(otherAccount);
+        const otherAccountBalance = await contract.balanceOf(otherAccount.toBytes());
         expect(otherAccountBalance.toString()).toEqual(transferAmount.toString());
 
-        const payerBalance = await contract.balanceOf(payerETHAddress);
+        const payerBalance = await contract.balanceOf(payerETHAddress.toBytes());
         expect(payerBalance.toString()).toEqual((TOTAL_SUPPLY - transferAmount).toString());
     });
 
     // events are broken with solang:latest and this library
     xit('emits events', async function () {
-        const spenderAccount = publicKeyToHex(Keypair.generate().publicKey);
+        const spenderAccount = Keypair.generate().publicKey;
         const spendAmount = 9;
 
         const event = await new Promise<LogDescription>((resolve, reject) => {
@@ -65,7 +67,7 @@ describe('ERC20', () => {
                 await contract.removeEventListener(listenerId);
                 resolve(event);
             });
-            contract.approve(spenderAccount, spendAmount).catch(reject);
+            contract.approve(spenderAccount.toBytes(), spendAmount).catch(reject);
         });
 
         expect(event.name).toEqual('Approval');

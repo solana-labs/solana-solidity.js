@@ -13,7 +13,8 @@
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "isolatedModules": true,
-        "typeRoots": ["node_modules/@types", "types"]
+        "typeRoots": ["node_modules/@types", "types"],
+        "experimentalDecorators": true
     },
     "include": ["src"],
     "exclude": ["node_modules"],

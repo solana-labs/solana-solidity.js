@@ -23,6 +23,7 @@ import {
 } from './errors';
 import { LogsParser, parseLogTopic, sendAndConfirmTransactionWithLogs, simulateTransactionWithLogs } from './logs';
 import { ABI, encodeSeeds, ProgramDerivedAddress } from './utils';
+import { borshDecode, borshEncode } from './borsh';
 
 /** Accounts, signers, and other parameters for calling a contract function or constructor */
 export interface ContractCallOptions {
@@ -205,7 +206,7 @@ export class Contract {
 
         const hash = keccak256(Buffer.from(name));
         const seeds = programDerivedAddresses.map(({ seed }) => seed);
-        const input = this.interface.encodeDeploy(constructorArgs);
+        const input = borshEncode(this.interface.deploy.inputs, constructorArgs);
 
         const data = Buffer.concat([
             // storage account where state for this contract will be stored
@@ -218,8 +219,8 @@ export class Contract {
             Buffer.from(hash.substr(2, 8), 'hex'),
             // PDA seeds
             encodeSeeds(seeds),
-            // eth abi encoded constructor arguments
-            Buffer.from(input.replace('0x', ''), 'hex'),
+            // abi encoded constructor arguments
+            input,
         ]);
 
         const keys = [
@@ -424,7 +425,10 @@ export class Contract {
         } = options ?? {};
 
         const seeds = programDerivedAddresses.map(({ seed }) => seed);
-        const input = this.interface.encodeFunctionData(fragment, args);
+        const selector = this.interface.getSighash(fragment);
+        const selector_bytes = Buffer.from(selector.replace('0x', ''), 'hex');
+        const encoded_args = borshEncode(fragment.inputs, args);
+        const input = Buffer.concat([selector_bytes, encoded_args]);
 
         const data = Buffer.concat([
             // storage account where state for this contract will be stored
@@ -437,8 +441,8 @@ export class Contract {
             Buffer.from('00000000', 'hex'),
             // PDA seeds
             encodeSeeds(seeds),
-            // eth abi encoded constructor arguments
-            Buffer.from(input.replace('0x', ''), 'hex'),
+            // abi encoded constructor arguments
+            input,
         ]);
 
         const keys = [
@@ -523,10 +527,12 @@ export class Contract {
         if (length) {
             if (!encoded) throw new MissingReturnDataError();
 
-            if (length == 1) {
-                [result] = this.interface.decodeFunctionResult(fragment, encoded);
+            if (length === 1) {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                [result] = borshDecode(fragment.outputs!, encoded);
             } else {
-                result = this.interface.decodeFunctionResult(fragment, encoded);
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                result = borshDecode(fragment.outputs!, encoded);
             }
         }
 
