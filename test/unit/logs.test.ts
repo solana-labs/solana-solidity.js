@@ -1,6 +1,7 @@
-import { Interface } from '@ethersproject/abi';
+import { Interface, ParamType } from '@ethersproject/abi';
 import expect from 'expect';
 import { parseLogTopic, parseTransactionError, parseTransactionLogs } from '../../src/logs';
+import { borshEncode } from '../../lib/borsh';
 
 describe('logs', () => {
     it('parses "Program return:" logs', async function () {
@@ -34,11 +35,16 @@ describe('logs', () => {
             'Program return: 9cgeQC4fKNtL4vAk59UBjJwyAgXocDVwZCcnNq5gHrqk CMN5oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABNEbyB0aGUgcmV2ZXJ0IHRoaW5nAAAAAAAAAAAAAAAAAA==',
             'Program 9cgeQC4fKNtL4vAk59UBjJwyAgXocDVwZCcnNq5gHrqk failed: custom program error: 0x0',
         ];
-        const { encoded, computeUnitsUsed } = parseTransactionLogs(logs);
+        const { computeUnitsUsed } = parseTransactionLogs(logs);
         expect(computeUnitsUsed).toBeGreaterThan(1000);
         expect(computeUnitsUsed).toBeLessThan(1100);
 
-        const err = parseTransactionError(encoded, computeUnitsUsed, null, logs, null);
+        const params = [ParamType.from('uint32'), ParamType.from('string')];
+
+        const args: Array<any> = [0x08c379a0, 'Do the revert thing'];
+
+        const borshEncoded = borshEncode(params, args);
+        const err = parseTransactionError(Buffer.from(borshEncoded), computeUnitsUsed, null, logs, null);
         expect(err.message).toBe('Do the revert thing');
         expect(err.computeUnitsUsed).toBe(1023);
         expect(err.logs.length).toBeGreaterThan(1);

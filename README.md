@@ -75,7 +75,7 @@ touch erc20.js
 
 ```js
 const { Connection, LAMPORTS_PER_SOL, Keypair } = require('@solana/web3.js');
-const { Contract, publicKeyToHex } = require('@solana/solidity');
+const { Contract } = require('@solana/solidity');
 const { readFileSync } = require('fs');
 
 const ERC20_ABI = JSON.parse(readFileSync('./build/ERC20.abi', 'utf8'));
@@ -128,7 +128,7 @@ const BUNDLE_SO = readFileSync('./build/bundle.so');
 
     console.log('Sending tokens will emit a "Transfer" event ...');
     const recipient = Keypair.generate();
-    await contract.transfer(publicKeyToHex(recipient.publicKey), '1000000000000000000');
+    await contract.transfer(recipient.publicKey.toBytes(), 1000000000000000000);
 
     process.exit(0);
 })();
