@@ -1,6 +1,6 @@
 import { Interface, ParamType } from '@ethersproject/abi';
 import expect from 'expect';
-import { parseLogTopic, parseTransactionError, parseTransactionLogs } from '../../src/logs';
+import { parseLogTopic, parseTransactionError, parseTransactionLogs } from '../../src';
 import { borshEncode } from '../../lib/borsh';
 
 describe('logs', () => {

@@ -49,7 +49,7 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@dao-xyz/borsh@^3.3.0":
+"@dao-xyz/borsh@3.3.0":
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/@dao-xyz/borsh/-/borsh-3.3.0.tgz#1fea8c7b405765eeb073b83ba67054cf71c91a88"
   integrity sha512-3d40ecwBnTP+Y7YP1lM6mkPT2oDAU5TDmLo/MIdSGEV3fW6BKbDKopBzDtW4gW6m/eoAz7psdvWfFJZbGELS/A==

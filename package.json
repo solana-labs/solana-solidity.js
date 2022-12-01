@@ -42,7 +42,7 @@
         "validator": "docker run --rm -it -p 8899:8899 -p 8900:8900 solanalabs/solana:edge > /dev/null"
     },
     "dependencies": {
-        "@dao-xyz/borsh": "^3.3.0",
+        "@dao-xyz/borsh": "3.3.0",
         "@ethersproject/abi": "^5.5.0",
         "@ethersproject/bytes": "^5.5.0",
         "@ethersproject/keccak256": "^5.5.0",

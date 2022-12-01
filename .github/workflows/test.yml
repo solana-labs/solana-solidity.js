@@ -15,4 +15,6 @@ jobs:
     - run: yarn install
     - run: yarn lint
     - run: yarn run build:test
-    - run: yarn test
+    - run: |
+        yarn build
+        yarn test
