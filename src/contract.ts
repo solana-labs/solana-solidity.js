@@ -24,6 +24,8 @@ import {
 import { LogsParser, parseLogTopic, sendAndConfirmTransactionWithLogs, simulateTransactionWithLogs } from './logs';
 import { ABI, encodeSeeds, ProgramDerivedAddress } from './utils';
 import { borshDecode, borshEncode } from './borsh';
+import sha256 from 'fast-sha256';
+import { snakeCase } from 'snake-case';
 
 /** Accounts, signers, and other parameters for calling a contract function or constructor */
 export interface ContractCallOptions {
@@ -425,10 +427,10 @@ export class Contract {
         } = options ?? {};
 
         const seeds = programDerivedAddresses.map(({ seed }) => seed);
-        const selector = this.interface.getSighash(fragment);
-        const selector_bytes = Buffer.from(selector.replace('0x', ''), 'hex');
+        const discriminator_image = 'global:' + snakeCase(fragment.name);
+        const name_hash = sha256(new TextEncoder().encode(discriminator_image));
         const encoded_args = borshEncode(fragment.inputs, args);
-        const input = Buffer.concat([selector_bytes, encoded_args]);
+        const input = Buffer.concat([name_hash.slice(0, 8), encoded_args]);
 
         const data = Buffer.concat([
             // storage account where state for this contract will be stored
