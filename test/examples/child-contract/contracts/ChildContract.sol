@@ -1,9 +1,9 @@
 contract Creator {
     Child public c;
 
-    function createChild() public {
+    function createChild(address _child) public {
         print('creating child');
-        c = new Child();
+        c = new Child{address: _child}();
     }
 
     function updateChild(uint8 _value) public {
@@ -11,12 +11,13 @@ contract Creator {
         c.updateValue(_value);
     }
 
-    function readChild() public returns (uint8) {
+    function readChild() public view returns (uint8) {
         print('reading child');
         return c.readValue();
     }
 }
 
+@program_id("92AaiNTBJmM583bhjaF7g67XEHiKbPZiZY9DoUrjX6cj")
 contract Child {
     uint8 value;
 

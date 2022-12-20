@@ -5,21 +5,18 @@ import { ABI, Contract } from '../../src';
 
 const DEFAULT_URL = 'http://localhost:8899';
 
-export async function loadContract(exampleDir: string, constructorArgs: any[] = [], name?: string, space = 8192 * 8) {
-    const so = fs.readFileSync(path.join(exampleDir, './build/bundle.so'));
-
-    let file: string;
-    if (name) {
-        file = `${name}.abi`;
-    } else {
-        file = fs.readdirSync(path.join(exampleDir, './build')).filter((n) => !~n.search('bundle.so'))[0];
-        name = file.split('.abi')[0];
-    }
-
-    const abi = JSON.parse(fs.readFileSync(path.join(exampleDir, `./build/${file}`), 'utf-8')) as ABI;
+export async function loadContract(exampleDir: string, name: string, constructorArgs: any[] = [], space = 8192 * 8) {
+    const so = fs.readFileSync(path.join(exampleDir, `./build/${name}.so`));
+    const abi = JSON.parse(fs.readFileSync(path.join(exampleDir, `./build/${name}.abi`), 'utf-8')) as ABI;
     const connection = getConnection();
     const payer = await newAccountWithLamports(connection);
-    const program = Keypair.generate();
+    const key = path.join(exampleDir, `{name}.key`);
+    let program: Keypair;
+    if (fs.existsSync(key)) {
+        program = Keypair.fromSecretKey(JSON.parse(fs.readFileSync(key, 'utf-8')));
+    } else {
+        program = Keypair.generate();
+    }
     const storage = Keypair.generate();
     const contract = new Contract(connection, program.publicKey, storage.publicKey, abi, payer);
 

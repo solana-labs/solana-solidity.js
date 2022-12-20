@@ -7,7 +7,7 @@ describe('Native Solana', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract } = await loadContract(__dirname));
+        ({ contract } = await loadContract(__dirname, 'Bank'));
     });
 
     it('can be transfered', async function () {

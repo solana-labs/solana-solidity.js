@@ -10,7 +10,7 @@ describe('Signature Check', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract, storage } = await loadContract(__dirname));
+        ({ contract, storage } = await loadContract(__dirname, 'SigCheck'));
     });
 
     it('check valid signature', async function () {

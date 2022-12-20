@@ -16,7 +16,7 @@ describe('ERC20', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract, payerETHAddress } = await loadContract(__dirname, [NAME, SYMBOL, TOTAL_SUPPLY]));
+        ({ contract, payerETHAddress } = await loadContract(__dirname, 'ERC20', [NAME, SYMBOL, TOTAL_SUPPLY]));
     });
 
     it('deploys new contract', async function () {
