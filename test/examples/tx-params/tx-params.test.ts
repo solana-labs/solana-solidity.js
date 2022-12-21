@@ -7,7 +7,7 @@ describe('TxParams', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract } = await loadContract(__dirname));
+        ({ contract } = await loadContract(__dirname, 'Array'));
     });
 
     it('works without tx params', async function () {

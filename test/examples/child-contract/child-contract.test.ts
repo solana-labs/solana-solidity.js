@@ -11,7 +11,7 @@ describe('ChildContract', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract, storage } = await loadContract(__dirname, [], 'Creator'));
+        ({ contract, storage } = await loadContract(__dirname, 'Creator'));
     });
 
     it('Creates child contract', async function () {

@@ -1,5 +1,4 @@
 import { FunctionFragment, Interface, LogDescription, Result } from '@ethersproject/abi';
-import { keccak256 } from '@ethersproject/keccak256';
 import { defineReadOnly } from '@ethersproject/properties';
 import {
     BPF_LOADER_PROGRAM_ID,
@@ -22,7 +21,7 @@ import {
     MissingReturnDataError,
 } from './errors';
 import { LogsParser, parseLogTopic, sendAndConfirmTransactionWithLogs, simulateTransactionWithLogs } from './logs';
-import { ABI, encodeSeeds, ProgramDerivedAddress } from './utils';
+import { ABI, ProgramDerivedAddress } from './utils';
 import { borshDecode, borshEncode } from './borsh';
 import sha256 from 'fast-sha256';
 import { snakeCase } from 'snake-case';
@@ -34,8 +33,6 @@ export interface ContractCallOptions {
     writableAccounts?: PublicKey[];
     programDerivedAddresses?: ProgramDerivedAddress[];
     signers?: Signer[];
-    sender?: PublicKey | undefined;
-    value?: number | bigint;
     simulate?: boolean;
     ed25519sigs?: Ed25519SigCheck[];
     confirmOptions?: ConfirmOptions;
@@ -195,8 +192,6 @@ export class Contract {
             writableAccounts = [],
             programDerivedAddresses = [],
             signers = [],
-            sender = payer.publicKey,
-            value = 0,
             simulate = false,
             ed25519sigs = [],
             confirmOptions = {
@@ -206,24 +201,10 @@ export class Contract {
             },
         } = options ?? {};
 
-        const hash = keccak256(Buffer.from(name));
-        const seeds = programDerivedAddresses.map(({ seed }) => seed);
-        const input = borshEncode(this.interface.deploy.inputs, constructorArgs);
-
-        const data = Buffer.concat([
-            // storage account where state for this contract will be stored
-            this.storage.toBuffer(),
-            // msg.sender for this transaction
-            sender.toBuffer(),
-            // lamports to send to payable constructor
-            encodeU64(BigInt(value)),
-            // hash of contract name
-            Buffer.from(hash.substr(2, 8), 'hex'),
-            // PDA seeds
-            encodeSeeds(seeds),
-            // abi encoded constructor arguments
-            input,
-        ]);
+        const discriminator_image = 'global:new';
+        const name_hash = sha256(new TextEncoder().encode(discriminator_image));
+        const encoded_args = borshEncode(this.interface.deploy.inputs, constructorArgs);
+        const data = Buffer.concat([name_hash.slice(0, 8), encoded_args]);
 
         const keys = [
             {
@@ -415,8 +396,6 @@ export class Contract {
             writableAccounts = [],
             programDerivedAddresses = [],
             signers = [],
-            sender = payer.publicKey,
-            value = 0,
             simulate = false,
             ed25519sigs = [],
             confirmOptions = {
@@ -426,26 +405,10 @@ export class Contract {
             },
         } = options ?? {};
 
-        const seeds = programDerivedAddresses.map(({ seed }) => seed);
         const discriminator_image = 'global:' + snakeCase(fragment.name);
         const name_hash = sha256(new TextEncoder().encode(discriminator_image));
         const encoded_args = borshEncode(fragment.inputs, args);
-        const input = Buffer.concat([name_hash.slice(0, 8), encoded_args]);
-
-        const data = Buffer.concat([
-            // storage account where state for this contract will be stored
-            this.storage.toBuffer(),
-            // msg.sender for this transaction
-            sender.toBuffer(),
-            // lamports to send to payable constructor
-            encodeU64(BigInt(value)),
-            // hash of contract name, 0 for function calls
-            Buffer.from('00000000', 'hex'),
-            // PDA seeds
-            encodeSeeds(seeds),
-            // abi encoded constructor arguments
-            input,
-        ]);
+        const data = Buffer.concat([name_hash.slice(0, 8), encoded_args]);
 
         const keys = [
             {
@@ -541,10 +504,4 @@ export class Contract {
         if (returnResult === true) return result as any;
         return { result, logs, events, computeUnitsUsed, signature };
     }
-}
-
-function encodeU64(num: bigint): Buffer {
-    const buf = Buffer.alloc(8);
-    buf.writeBigUInt64LE(num, 0);
-    return buf;
 }

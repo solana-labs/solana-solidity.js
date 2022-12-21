@@ -7,7 +7,7 @@ describe('Errors', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract } = await loadContract(__dirname, [false]));
+        ({ contract } = await loadContract(__dirname, 'Errors', [false]));
     });
 
     it('catches reverts', async function () {
@@ -67,7 +67,7 @@ describe('Errors', () => {
     it('catches constructor errors', async function () {
         this.timeout(150000);
         try {
-            await loadContract(__dirname, [true]);
+            await loadContract(__dirname, 'Errors', [true]);
         } catch (error) {
             if (!(error instanceof TransactionError)) throw error;
             expect(error.message).toBe('Do the revert thing');
@@ -106,7 +106,7 @@ describe('Errors', () => {
         this.timeout(150000);
 
         try {
-            await loadContract(__dirname, [false], 'Errors', 10);
+            await loadContract(__dirname, 'Errors', [false], 10);
         } catch (error) {
             if (!(error instanceof TransactionError)) throw error;
             expect(error.message).toBe('account data too small for instruction');

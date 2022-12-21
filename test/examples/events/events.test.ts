@@ -10,7 +10,7 @@ describe('Events', () => {
     xit('get returned in contract deploy results', async function () {
         this.timeout(150000);
 
-        const result = await loadContract(__dirname);
+        const result = await loadContract(__dirname, 'Events');
         contract = result.contract;
         const events = result.events;
         expect(events.length).toEqual(1);

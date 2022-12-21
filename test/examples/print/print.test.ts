@@ -7,7 +7,7 @@ describe('Print', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract } = await loadContract(__dirname));
+        ({ contract } = await loadContract(__dirname, 'Print'));
     });
 
     it('logs', async function () {

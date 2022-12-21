@@ -1,3 +1,5 @@
+import 'solana';
+
 contract ERC20 {
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -362,7 +364,15 @@ contract ERC20 {
      *
      */
     function _msgSender() internal view virtual returns (address payable) {
-        return msg.sender;
+        for (uint64 i = 0; i < tx.accounts.length; i++) {
+            AccountInfo ai = tx.accounts[i];
+
+            if (ai.is_signer) {
+                return payable(ai.key);
+            }
+        }
+
+        revert("signer not found");
     }
 
     /**

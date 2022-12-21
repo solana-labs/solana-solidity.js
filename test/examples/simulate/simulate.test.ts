@@ -7,7 +7,7 @@ describe('Simulate', () => {
 
     before(async function () {
         this.timeout(150000);
-        ({ contract } = await loadContract(__dirname));
+        ({ contract } = await loadContract(__dirname, 'Calc'));
     });
 
     it('calc', async function () {
