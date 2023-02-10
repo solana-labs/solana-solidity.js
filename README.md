@@ -1,3 +1,10 @@
+# 🚨🚨🚨 NO LONGER SUPPORTED 🚨🚨🚨
+
+The [Solang Compiler](https://github.com/hyperledger/solang) no longer supports
+this library, and uses [Anchor](https://github.com/coral-xyz/anchor) instead.
+
+Please see the [Solang docs](https://solang.readthedocs.io/en/latest/targets/solana.html) for how to use Solang with Anchor.
+
 # `@solana/solidity`
 
 The [Solang Compiler](https://github.com/hyperledger/solang) compiles Solidity contracts to native Solana BPF programs.
